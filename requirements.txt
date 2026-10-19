@@ -1,0 +1,8 @@
+# DAOResolve development dependencies.
+# Package names follow the GenLayer toolchain described in AGENTS.md.
+# Exact versions will be pinned after the implementation environment is verified.
+
+genvm-linter
+genlayer-test
+genlayer
+pytest
