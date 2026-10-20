@@ -5,7 +5,7 @@
 | Gate | Result |
 |---|---|
 | `genvm-lint` | Clean; 3 checks passed. One informational notice about a newer runner |
-| Direct tests | **171 passed in 5.89s** |
+| Direct tests | **171 passed** |
 | Integration tests | **3 passed in 209.44s on StudioNet** for the current source, and 3 passed in 270.07s for the earlier deployed revision; see `deployments/studionet.md` |
 
 Commands used:
@@ -87,9 +87,9 @@ Coverage:
 
 The latest recorded run deployed three contracts from the current source and
 produced `MAJORITY_AGREE` receipts, including on-chain `decided_by` values for
-both a deterministic and an interpretive assessment. The canonical deployment
-address in the log predates the current source, so those test contracts are the
-on-chain evidence for this revision. See
+both a deterministic and an interpretive assessment. Those test contracts, and
+the official deployment `0xb4d8bf96…` whose stored code is byte-identical to
+`contracts/dao_resolve.py`, are the on-chain evidence for this revision. See
 [../deployments/studionet.md](../deployments/studionet.md)
 for addresses and transaction hashes.
 

@@ -28,11 +28,11 @@ meaning of a constrained verdict.
 ## 2.1 Implementation status
 
 The contract is implemented in `contracts/dao_resolve.py` (1,463 lines),
-lint-clean, and covered by 171 passing direct tests. The latest deployment on
-StudioNet is `0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA`, which predates the
-readable-citation floor and the derived `decided_by` field in the working tree;
-redeployment is pending. See [deployment.md](deployment.md) and
-[testing.md](testing.md).
+lint-clean, and covered by 171 passing direct tests. The official StudioNet
+deployment is `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`, whose stored code is
+byte-identical to the working file (SHA-256 `f0a4abc1…`). It is a fresh
+instance: no rules or disputes have been registered on it. See
+[deployment.md](deployment.md) and [testing.md](testing.md).
 
 ## 3. Core design principles
 

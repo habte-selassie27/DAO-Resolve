@@ -22,11 +22,11 @@ contracts/
 - One custom leader/validator consensus block for residual interpretation.
 - Bounded inputs, bounded pagination, and stable error prefixes.
 
-An earlier revision is deployed on StudioNet at
-`0x48179D48495B7199a3FCb939c3f0F73a23c50b70`. See
-[../deployments/studionet.md](../deployments/studionet.md). The current working
-tree contains later changes and has not been redeployed; compare `genlayer code`
-before assuming byte-identical source.
+The official StudioNet deployment is
+`0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`. Its stored code is byte-identical
+to `dao_resolve.py` here (SHA-256 `f0a4abc1…`), verified by downloading the code
+through `gen_getContractCode` and hashing it. See
+[../deployments/studionet.md](../deployments/studionet.md).
 
 ## Implementation rules
 

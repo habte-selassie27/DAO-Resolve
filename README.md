@@ -76,21 +76,28 @@ Full design: [docs/equivalence.md](docs/equivalence.md).
 |---|---|
 | Contract | `contracts/dao_resolve.py` (1,463 lines) |
 | Lint | `genvm-lint` clean, 3 checks passed (one informational newer-runner notice) |
-| Direct tests | 171 passed in 5.89s (`python3.12 -m pytest tests/direct/ -q`) |
+| Direct tests | 171 passed (`python3.12 -m pytest tests/direct/ -q`) |
 | Integration tests | 3 passed in 209.44s on StudioNet for this source (test deployments; see `deployments/studionet.md`) |
-| StudioNet deployment | `0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA` |
-| StudioNet deploy transaction | `0x3157b6a8137b74a162afcfbb288da91bd635062e0d7feaac60179aa3762c9f66` |
+| StudioNet deployment | `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` |
+| StudioNet deploy transaction | `0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f` |
+| Deployed source check | Stored code hashes to `f0a4abc1…`: byte-identical to `contracts/dao_resolve.py` |
 | Bradbury deployment | Blocked by a node-side "gas limit too high" rejection; no funds spent |
 
-The StudioNet record documents the revision **before** the readable-citation
-support floor and the derived `decided_by` field. The working tree is newer
-than the deployed contract, so the on-chain source no longer matches
-`contracts/dao_resolve.py`; redeployment is pending.
+The official StudioNet deployment runs exactly the source in this repository:
+the stored contract code was downloaded, decoded, and hashed against
+`contracts/dao_resolve.py` (`f0a4abc1812e8d37…`, 1,463 lines). It is a fresh
+instance — configuration and limits are readable on chain, no rules or
+disputes have been registered there yet.
 
-StudioNet explorer:
+An earlier instance at `0xDD29Ae63…` runs the pre-`decided_by` revision. It is
+kept in the deployment record because its write flow is the receipt trail for
+the evaluation pipeline; it does not match the working tree.
 
-- Contract: https://explorer-studio.genlayer.com/address/0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA
-- Deploy transaction: https://explorer-studio.genlayer.com/tx/0x3157b6a8137b74a162afcfbb288da91bd635062e0d7feaac60179aa3762c9f66
+StudioNet links:
+
+- Contract: https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb
+- Deploy transaction: https://explorer-studio.genlayer.com/tx/0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f
+- Open in Studio: https://studio.genlayer.com/?import-contract=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb
 
 The full deployment record, write transaction hashes, read outputs, and schema
 are in [deployments/studionet.md](deployments/studionet.md) and

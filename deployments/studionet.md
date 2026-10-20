@@ -5,32 +5,159 @@ All data below was produced on 2026-10-20 against GenLayer StudioNet
 invented: every hash and address comes from real command output, and every
 explorer link points at a transaction that was confirmed on chain.
 
-This record covers the review-response revision that adds a bounded evidence
-fingerprint (`web_digest`) to every assessment, together with the earlier
-changes (disputant claim in the prompt, evidence citations for decisive
-verdicts, pinned role addresses per rule version, hardened `MIN_ELAPSED`,
-shared evidence support in consensus, and event-type counts in the prompt).
+## Official deployment (current source)
 
-**Status:** superseded. The working tree now also enforces a readable-citation
-support floor for decisive verdicts and exposes `decided_by` on every
-assessment. The address below is still the latest confirmed StudioNet
-deployment, but it runs the earlier source. Redeploy to make the on-chain code
-match `contracts/dao_resolve.py` (1,463 lines), then update this record.
-
-## Contract
+**Status: current.** The stored contract code at this address is byte-identical
+to `contracts/dao_resolve.py` in this repository. This was checked, not assumed:
+the code was downloaded through the JSON-RPC method `gen_getContractCode`,
+base64-decoded, and hashed against the working file.
 
 | Item | Value |
 |---|---|
-| Contract file | `contracts/dao_resolve.py` (1,397 lines) |
+| Contract file | `contracts/dao_resolve.py` (1,463 lines) |
+| Source SHA-256 | `f0a4abc1812e8d37354baee25ffcf40d47fb70a577003a2099cefd7e1636fe6a` |
 | Runner | `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6` (v0.3.0-rc7) |
+| Contract address | `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` |
+| Deploy transaction | `0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f` |
+| Deploy transaction status | `FINALIZED`, execution mode `NORMAL`, 5 validators, 0 rotations |
+| Deploy timestamp | `2026-10-20T10:49:10Z` |
+| Deployer / current owner | `0x5B3661C576c7001e6d6279C67F3779705d334c89` |
+| Schema dump | `deployments/studionet.schema.txt` (242 lines: 12 read, 16 write methods) |
+| Studio import link | https://studio.genlayer.com/?import-contract=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb |
+| Explorer — contract | https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb |
+| Explorer — deploy tx | https://explorer-studio.genlayer.com/tx/0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f |
+| Stored code hash | identical to the row above (`f0a4abc1…`) |
+
+### Provenance check
+
+```bash
+ADDR=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb
+curl -s -X POST https://studio.genlayer.com/api \
+  -H 'Content-Type: application/json' \
+  -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"gen_getContractCode\",\"params\":[\"$ADDR\"]}" \
+  > /tmp/code.json
+
+python3 - <<'PY'
+import base64, hashlib, json, pathlib
+src = base64.b64decode(json.load(open('/tmp/code.json'))['result']).decode()
+local = pathlib.Path('contracts/dao_resolve.py').read_text()
+print('identical:', src == local)
+print('deployed sha256:', hashlib.sha256(src.encode()).hexdigest())
+print('local    sha256:', hashlib.sha256(local.encode()).hexdigest())
+PY
+```
+
+Result:
+
+```text
+identical: True
+deployed sha256: f0a4abc1812e8d37354baee25ffcf40d47fb70a577003a2099cefd7e1636fe6a
+local    sha256: f0a4abc1812e8d37354baee25ffcf40d47fb70a577003a2099cefd7e1636fe6a
+```
+
+Note on the Studio code panel: passing the address as a plain string to
+`gen_getContractCode` succeeds, but Studio's own UI sends it wrapped in an
+object (`[{"contractAddress": …}]`) and the node then fails with
+`(psycopg2.ProgrammingError) can't adapt type 'dict'`. That error comes from the
+Studio frontend/node parameter shape, not from this contract; the CLI and the
+string-parameter RPC path both return the code normally. `Contract 0x… not
+found` entries in the Studio log are simulation-mode deployments, which never
+reach chain.
+
+### On-chain state
+
+This is a fresh deployment: the explorer reports `tx_count: 1` for the address
+(the deploy itself), and no state-changing calls have been made. That is
+deliberate — seeding rules and disputes requires the owner key, and this record
+only claims what was actually executed.
+
+`genlayer call 0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb get_config`:
+
+```text
+{
+  challenge_window: 86400,
+  escalator: '0x5B3661C576c7001e6d6279C67F3779705d334c89',
+  limits: {
+    max_challenge_rounds: 10,
+    max_checks_per_rule: 12,
+    max_claim_len: 2000,
+    max_clause_len: 2000,
+    max_digest_len: 280,
+    max_events_per_proposal: 128,
+    max_evidence_per_dispute: 32,
+    max_reason_len: 1000
+  },
+  max_challenge_rounds: 3,
+  owner: '0x5B3661C576c7001e6d6279C67F3779705d334c89',
+  recorder: '0x5B3661C576c7001e6d6279C67F3779705d334c89',
+  rule_registrar: '0x5B3661C576c7001e6d6279C67F3779705d334c89',
+  strict_separation: false,
+  vote_required_categories: []
+}
+```
+
+```text
+genlayer call 0xb4d8bf96... list_active_rules --args 0 10  ->  []
+genlayer call 0xb4d8bf96... list_disputes     --args 0 10  ->  []
+```
+
+The 24-hour challenge window and 3 challenge rounds are the contract defaults;
+they are configuration, not a claim that a dispute was ever adjudicated at this
+address. The write-flow evidence below comes from earlier instances and from the
+integration suite, and is labelled as such.
+
+### Verify the deployment yourself
+
+```bash
+genlayer network set studionet
+genlayer schema 0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb
+genlayer call   0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb get_config
+genlayer call   0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb list_active_rules --args 0 10
+gltest tests/integration/ -v -s --network studionet   # exercises the same source
+```
+
+## Integration evidence (current source, real consensus)
+
+`gltest tests/integration/ -v -s --network studionet` -> **3 passed in
+209.44s** on 2026-10-20, after the readable-citation support floor and the
+`decided_by` field. These are throwaway test deployments, not the official
+address above.
+
+| Test | Contract address |
+|---|---|
+| Consensus + challenge round trip | `0xF5D7C589DbAA69C39D5638D83A136026B8421ad4` |
+| Deterministic end-to-end | `0x32F69E7fd35e79cE994B5529fCC6635aC4255Fa2` |
+| Invalid transition | `0x387bACbA091B92D8d1B14F4f9962014123B93086` |
+
+| Step | Transaction |
+|---|---|
+| `register_rule` R2 | `0x16fa7e311e01062c3b84acd66edbb2786b196db7ec81eacc9c8bd6f614474d75` |
+| `evaluate_dispute` D2 | `0xc86d0236f77e36d1be5ae372eb1e742642f6fbabd78f4c9b5368841ccf274080` |
+| `challenge_assessment` D2 | `0x1e77f1a9a3589eb4c17eb173a3d8ec016411c04fdf7e7659ab4c196686571938` |
+| `re_evaluate` D2 | `0xe558071b6e347ff08cf3ccc2ce2870cfb560339fbcdcc7c57a6c078e642c7635` |
+
+All four were accepted with `MAJORITY_AGREE`. Read-back shows the new field on
+chain: `D2#a1` and `D2#a2` returned `decided_by: 'INTERPRETATION'`, while the
+deterministic dispute `D1#a1` returned `decided_by: 'DETERMINISTIC_CHECKS'`
+with `detail: 'elapsed=100 threshold=100'`. Consensus agreement under the
+readability floor was reached without retries.
+
+## Earlier instance `0xDD29Ae63…` (superseded)
+
+This instance runs the source **before** the readable-citation floor and the
+derived `decided_by` field. Its stored code does not match the current working
+tree; the official deployment above does. It is kept here because its full write
+flow is the receipt trail for the evaluation pipeline.
+
+| Item | Value |
+|---|---|
+| Contract file at deploy time | `contracts/dao_resolve.py` (1,397 lines) |
 | Contract address | `0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA` |
 | Deploy transaction | `0x3157b6a8137b74a162afcfbb288da91bd635062e0d7feaac60179aa3762c9f66` |
 | Deploy receipt | `status: 7` (`FINALIZED`), `result_name: MAJORITY_AGREE` |
-| Schema dump | `deployments/studionet.schema.txt` (242 lines, from `genlayer schema`) |
-| Explorer — contract | https://explorer-studio.genlayer.com/address/0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA |
 | Explorer — deploy tx | https://explorer-studio.genlayer.com/tx/0x3157b6a8137b74a162afcfbb288da91bd635062e0d7feaac60179aa3762c9f66 |
 
-## Write transactions
+### Write transactions
 
 The flow uses a 60-second challenge window. Every listed transaction was
 accepted with `result_name: MAJORITY_AGREE` and finalized on chain. The
@@ -56,7 +183,7 @@ empty string to integer `0`, which the contract rejects (see CLI note).
 Each transaction is viewable at
 `https://explorer-studio.genlayer.com/tx/<hash>`.
 
-## Read calls
+### Read calls
 
 `genlayer call 0xDD29Ae63... get_dispute --args D1` after evaluation (trimmed):
 
@@ -119,7 +246,8 @@ the URL, the page was 3,012 characters, and the stored fingerprint shows the
 first 12 characters of what it read (HTML-escaped, so it can never break out of
 a delimiter). The verdict is `INCONCLUSIVE` because a reference article is not
 evidence of "adequate community discussion" — the contract records that
-honestly instead of inventing support.
+honestly instead of inventing support. This assessment predates `decided_by`,
+which is why the field is absent here.
 
 `genlayer call 0xDD29Ae63... get_config` (trimmed):
 
@@ -136,10 +264,11 @@ honestly instead of inventing support.
 }
 ```
 
-## Integration evidence (real consensus)
+### Consensus evidence on that instance
 
 `gltest tests/integration/ -v -s --network studionet` -> **3 passed in
-270.07s**. Contracts deployed by the suite during this run:
+270.07s** for the revision deployed there. Contracts deployed by the suite
+during that run:
 
 | Test | Contract address |
 |---|---|
@@ -163,46 +292,6 @@ assessment `D2#a1` cited `R2` and `D2#e1` with
 `web_digest: 'D2#e1=189:The DAO foru;D2#e2=63:The author r'`. Both were
 accepted with `MAJORITY_AGREE`, demonstrating the citation requirement and the
 evidence fingerprint under real consensus.
-
-### Re-run against the readable-citation revision (current working tree)
-
-`gltest tests/integration/ -v -s --network studionet` -> **3 passed in
-209.44s** on 2026-10-20, after the readable-citation support floor and the
-`decided_by` field. These are test deployments of the current source, not the
-canonical address above.
-
-| Test | Contract address |
-|---|---|
-| Consensus + challenge round trip | `0xF5D7C589DbAA69C39D5638D83A136026B8421ad4` |
-| Deterministic end-to-end | `0x32F69E7fd35e79cE994B5529fCC6635aC4255Fa2` |
-| Invalid transition | `0x387bACbA091B92D8d1B14F4f9962014123B93086` |
-
-| Step | Transaction |
-|---|---|
-| `register_rule` R2 | `0x16fa7e311e01062c3b84acd66edbb2786b196db7ec81eacc9c8bd6f614474d75` |
-| `evaluate_dispute` D2 | `0xc86d0236f77e36d1be5ae372eb1e742642f6fbabd78f4c9b5368841ccf274080` |
-| `challenge_assessment` D2 | `0x1e77f1a9a3589eb4c17eb173a3d8ec016411c04fdf7e7659ab4c196686571938` |
-| `re_evaluate` D2 | `0xe558071b6e347ff08cf3ccc2ce2870cfb560339fbcdcc7c57a6c078e642c7635` |
-
-All four were accepted with `MAJORITY_AGREE`. Read-back shows the new field on
-chain: `D2#a1` and `D2#a2` returned `decided_by: 'INTERPRETATION'`, while the
-deterministic dispute `D1#a1` returned
-`decided_by: 'DETERMINISTIC_CHECKS'` with
-`detail: 'elapsed=100 threshold=100'`. Consensus agreement under the readability
-floor was reached without retries.
-
-## Reproduction
-
-```bash
-GENVM_VERSION=v0.3.0-rc7 genvm-lint check contracts/dao_resolve.py --json
-pytest tests/direct/ -q
-gltest tests/integration/ -v -s --network studionet
-genlayer deploy --contract contracts/dao_resolve.py
-genlayer schema 0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA
-genlayer call 0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA get_config
-genlayer call 0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA get_dispute --args D1
-genlayer call 0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA get_assessment_history --args D2 0 5
-```
 
 ## CLI note
 

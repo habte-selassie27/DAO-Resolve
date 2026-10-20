@@ -2,6 +2,52 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-20 (official StudioNet deployment recorded)
+
+DONE:
+- Recorded the official StudioNet deployment
+  `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`, deploy transaction
+  `0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f`
+  (`FINALIZED`, execution mode `NORMAL`, 5 validators, 0 rotations).
+- Verified the deployment rather than trusting the address: the stored code was
+  downloaded through `gen_getContractCode`, base64-decoded, and hashed. It is
+  byte-identical to `contracts/dao_resolve.py` (both
+  `f0a4abc1812e8d37…`, 1,463 lines), so the `web_digest`, readable-citation
+  floor, and derived `decided_by` field are live on chain.
+- Documented the on-chain state honestly: the deploy is the address's only
+  transaction, so the instance is fresh (0 rules, 0 disputes). Read back
+  `get_config` (`challenge_window: 86400`, `max_challenge_rounds: 3`,
+  owner/registrar/recorder/escalator all
+  `0x5B3661C5…4c89`), plus `list_active_rules` and `list_disputes` (both `[]`).
+- Regenerated `deployments/studionet.schema.txt` from the official address
+  (242 lines, 12 read + 16 write methods).
+- Updated `README.md`, `docs/deployment.md`, `docs/design.md`,
+  `docs/testing.md`, `deployments/README.md`, and `deployments/studionet.md` to
+  point at the official address, with the earlier instance `0xDD29Ae63…`
+  retained as a clearly labelled receipt trail for the write flow.
+- Documented two Studio-side failures seen while verifying, so they are not
+  mistaken for contract faults: Studio's UI sends `gen_getContractCode` an
+  object parameter (`[{"contractAddress": …}]`), which the node rejects with
+  `(psycopg2.ProgrammingError) can't adapt type 'dict'`; the same call with a
+  plain string works. Simulation-mode deployments never reach chain and appear
+  as `Contract 0x… not found`.
+
+PROOF:
+- `gen_getContractCode` round trip: `identical: True`, deployed and local
+  SHA-256 both `f0a4abc1812e8d37354baee25ffcf40d47fb70a577003a2099cefd7e1636fe6a`.
+- `genlayer schema 0xb4d8bf96…` -> 242-line schema, exit 0.
+- `genlayer call 0xb4d8bf96… get_config` -> config above, exit 0;
+  `list_active_rules --args 0 10` and `list_disputes --args 0 10` -> `[]`.
+- Explorer API reports `tx_count: 1`, status `FINALIZED`.
+
+NEXT:
+- Seed a rule and a dispute on the official address from the owner account if a
+  live demo state is wanted; that requires the owner key and is not done here.
+
+BLOCKED:
+- Nothing blocked for this record. Bradbury remains blocked by the node-side
+  gas-limit rejection.
+
 ## 2026-10-20 (fifth review response)
 
 DONE:

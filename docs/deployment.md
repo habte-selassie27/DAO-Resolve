@@ -2,24 +2,33 @@
 
 ## Current status
 
-DAOResolve is deployed on **StudioNet**:
+DAOResolve is deployed on **StudioNet**. The official deployment runs the
+current source:
 
 | Item | Value |
 |---|---|
-| Contract | `contracts/dao_resolve.py` (1,397 lines at deploy time; working tree is 1,463) |
-| Address | `0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA` |
-| Deploy transaction | `0x3157b6a8137b74a162afcfbb288da91bd635062e0d7feaac60179aa3762c9f66` |
-| Explorer | https://explorer-studio.genlayer.com/address/0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA |
+| Contract | `contracts/dao_resolve.py` (1,463 lines) |
+| Source SHA-256 | `f0a4abc1812e8d37354baee25ffcf40d47fb70a577003a2099cefd7e1636fe6a` |
+| Address | `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` |
+| Deploy transaction | `0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f` |
+| Deploy status | `FINALIZED` (execution mode `NORMAL`, 5 validators) |
+| Owner | `0x5B3661C576c7001e6d6279C67F3779705d334c89` |
+| Explorer | https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb |
+| Studio import | https://studio.genlayer.com/?import-contract=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb |
 | Schema | `deployments/studionet.schema.txt` |
 
 The complete record, including write transactions and read outputs, is in
 [../deployments/studionet.md](../deployments/studionet.md).
 
-**Revision note:** that record documents the revision deployed and exercised on
-StudioNet. The working tree has since gained the readable-citation support
-floor and the derived `decided_by` field, so the on-chain source is **older**
-than `contracts/dao_resolve.py`. Redeploy before claiming the on-chain source
-matches the working tree, then verify with `genlayer code <address>`.
+**Source match:** the stored code at this address was downloaded through
+`gen_getContractCode`, decoded, and hashed. It is byte-identical to
+`contracts/dao_resolve.py` (`f0a4abc1…`). The instance is fresh — the deploy is
+its only transaction, so no rules or disputes are registered on it yet.
+
+**Revision note:** the earlier instance `0xDD29Ae63…` runs the revision before
+the readable-citation support floor and the derived `decided_by` field. Its
+write flow is preserved in the deployment record as the receipt trail, but it
+does not match the working tree.
 
 **Bradbury:** the deployment attempt was rejected by the node with
 `gas limit too high` before confirmation. No funds were spent. This optional
