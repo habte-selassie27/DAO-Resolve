@@ -22,8 +22,15 @@ The complete record, including write transactions and read outputs, is in
 
 **Source match:** the stored code at this address was downloaded through
 `gen_getContractCode`, decoded, and hashed. It is byte-identical to
-`contracts/dao_resolve.py` (`f0a4abc1…`). The instance is fresh — the deploy is
-its only transaction, so no rules or disputes are registered on it yet.
+`contracts/dao_resolve.py` (`f0a4abc1…`).
+
+**Live exercise:** every read and write method was executed against this
+deployment from the owner account on 2026-10-20 — including a full dispute
+lifecycle to `FINALIZED`, a challenge/re-evaluation round under real consensus,
+and the two intended `EXPECTED:` rejections (vote-required finality, deprecated
+rule). Hashes are recorded in [../deployments/studionet.md](../deployments/studionet.md).
+The challenge window was restored to the 24-hour default afterwards; `R1` is
+deprecated by that exercise and `R2` remains active.
 
 **Revision note:** the earlier instance `0xDD29Ae63…` runs the revision before
 the readable-citation support floor and the derived `decided_by` field. Its

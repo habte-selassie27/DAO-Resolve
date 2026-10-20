@@ -2,6 +2,62 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-20 (every public method exercised on the official deployment)
+
+DONE:
+- Ran all 16 write methods and all 12 read methods of `dao_resolve.py` against
+  the official StudioNet deployment
+  `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` from the owner account
+  `0x5B3661C576c7001e6d6279C67F3779705d334c89` (41 transactions recorded).
+- Drove five disputes through the real state machine: `D1` open → evaluate →
+  challenge → re-evaluate (`RE_EVALUATED`), `D2` open → withdraw (`WITHDRAWN`),
+  `D3` open → escalate (`ESCALATED`), `D4` open → evaluate → challenge →
+  re-evaluate → finalize (`FINALIZED`), `D5` open → evaluate → finalize
+  (blocked) → escalate (`ESCALATED`).
+- Confirmed both decision paths on chain: `D1#a1`/`D1#a2`/`D5#a1` returned
+  `decided_by: 'DETERMINISTIC_CHECKS'` with `detail: 'elapsed=100
+  threshold=100'`; `D4#a1`/`D4#a2` returned `decided_by: 'INTERPRETATION'`
+  with `verdict: 'INCONCLUSIVE'`, because two contradictory text statements
+  cannot prove that discussion occurred.
+- Verified the citation behaviour under real consensus: `D4#a1` cited no
+  evidence ids and recorded `web_digest: 'D4#e1=41:No forum thr;D4#e2=65:A
+  forum thre'`; after the challenge added `D4#e3`, the re-evaluation cited
+  `D4#e1`, `D4#e2`, and `D4#e3`. Evaluate took 29.2s, re-evaluate 23.6s.
+- Verified the two guard rails by their rollback payloads rather than by
+  reading the source: `finalize_dispute D5` in a vote-required `TIMING`
+  category returned `EXPECTED: category requires escalation to the DAO
+  procedure`, and `open_dispute D6` on the deprecated `R1` returned
+  `EXPECTED: rule is deprecated`. Both left state unchanged.
+- Restored policy afterwards: `challenge_window: 86400`, `max_challenge_rounds:
+  3`, `vote_required_categories: []`, ownership unchanged. `R1` stays
+  deprecated by design; `R2` remains active.
+- Recorded the whole run, with all 41 transaction hashes and the read outputs,
+  in `deployments/studionet.md`; updated `README.md`, `docs/deployment.md`, and
+  `docs/testing.md` to match. No private key or keystore material was written
+  to the repository, and the temporary CLI account was locked and removed after
+  the run.
+
+PROOF:
+- 41 writes, every one with a real hash on chain; read-back after the run shows
+  `D4` `FINALIZED` with `final_assessment_id: 'D4#a2'`, `D3`/`D5` `ESCALATED`,
+  `D2` `WITHDRAWN`, `D1` `RE_EVALUATED`, and `D6` absent.
+- `get_evidence D4 0 5` -> `D4#e1` DISPUTANT, `D4#e2` RESPONDENT, `D4#e3`
+  RESPONDENT (the challenge-added item).
+- `get_rule R1` -> `status: 'DEPRECATED'`; `list_active_rules` -> `R2` only.
+
+NEXT:
+- Nothing pending on chain. Re-deprecate or re-register rules only if the demo
+  state should be reset for a different narrative.
+
+BLOCKED:
+- A non-owner caller rejection could not be exercised on this address: the run
+  used a single key, so an unauthorised write would only prove that the CLI
+  signs with the same account. Covered by `tests/direct/test_access_control.py`.
+- `transfer_ownership` was executed with the current owner as the new owner. A
+  handoff to a different address was not performed, because it would move
+  control of the official deployment irreversibly to an account whose key is
+  not available.
+
 ## 2026-10-20 (official StudioNet deployment recorded)
 
 DONE:

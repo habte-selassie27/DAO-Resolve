@@ -81,17 +81,27 @@ Full design: [docs/equivalence.md](docs/equivalence.md).
 | StudioNet deployment | `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` |
 | StudioNet deploy transaction | `0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f` |
 | Deployed source check | Stored code hashes to `f0a4abc1…`: byte-identical to `contracts/dao_resolve.py` |
+| Live method exercise | All 16 write and 12 read methods executed on chain from the owner account (2026-10-20) |
 | Bradbury deployment | Blocked by a node-side "gas limit too high" rejection; no funds spent |
 
 The official StudioNet deployment runs exactly the source in this repository:
 the stored contract code was downloaded, decoded, and hashed against
-`contracts/dao_resolve.py` (`f0a4abc1812e8d37…`, 1,463 lines). It is a fresh
-instance — configuration and limits are readable on chain, no rules or
-disputes have been registered there yet.
+`contracts/dao_resolve.py` (`f0a4abc1812e8d37…`, 1,463 lines).
+
+It is not a blank deployment either. Every public method was exercised on it
+from the owner account: rules registered and deprecated, events recorded, five
+disputes driven through `EVALUATED`, `CHALLENGED` → `RE_EVALUATED`,
+`WITHDRAWN`, `ESCALATED`, and `FINALIZED`, plus the two intended rejections
+(`finalize` in a vote-required category and `open_dispute` on a deprecated
+rule, both `EXPECTED:` rollbacks with state unchanged). Both evaluation paths
+ran and agree with the design: `D1` and `D5` were decided by
+`DETERMINISTIC_CHECKS` without a model call, `D4` by `INTERPRETATION` under real
+consensus. Transaction hashes and read output are in
+deployments/studionet.md.
 
 An earlier instance at `0xDD29Ae63…` runs the pre-`decided_by` revision. It is
-kept in the deployment record because its write flow is the receipt trail for
-the evaluation pipeline; it does not match the working tree.
+kept in the deployment record as an additional receipt trail; it does not match
+the working tree.
 
 StudioNet links:
 

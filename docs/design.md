@@ -30,9 +30,10 @@ meaning of a constrained verdict.
 The contract is implemented in `contracts/dao_resolve.py` (1,463 lines),
 lint-clean, and covered by 171 passing direct tests. The official StudioNet
 deployment is `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`, whose stored code is
-byte-identical to the working file (SHA-256 `f0a4abc1…`). It is a fresh
-instance: no rules or disputes have been registered on it. See
-[deployment.md](deployment.md) and [testing.md](testing.md).
+byte-identical to the working file (SHA-256 `f0a4abc1…`). Every read and write
+method has been exercised on that instance, including a dispute that reached
+`FINALIZED` and one that was escalated after a vote-required category blocked
+finality. See [deployment.md](deployment.md) and [testing.md](testing.md).
 
 ## 3. Core design principles
 

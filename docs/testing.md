@@ -93,6 +93,18 @@ the official deployment `0xb4d8bf96…` whose stored code is byte-identical to
 [../deployments/studionet.md](../deployments/studionet.md)
 for addresses and transaction hashes.
 
+### Live method exercise
+
+The official deployment was also driven end to end from the owner account: all
+16 write methods and all 12 read methods were called, five disputes were carried
+through `EVALUATED`, `CHALLENGED` → `RE_EVALUATED`, `WITHDRAWN`, `ESCALATED`, and
+`FINALIZED`, and the two guard rails were confirmed by their rollback payloads
+(`EXPECTED: category requires escalation to the DAO procedure`,
+`EXPECTED: rule is deprecated`). Real consensus produced `INCONCLUSIVE` on
+contradictory text evidence and cited the challenge-added evidence on
+re-evaluation, so the model path and the citation floor both ran on chain rather
+than only in mocks. Transaction-level detail is in the deployment record.
+
 ## Quality gates
 
 Run in this order:

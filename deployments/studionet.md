@@ -64,14 +64,121 @@ string-parameter RPC path both return the code normally. `Contract 0x… not
 found` entries in the Studio log are simulation-mode deployments, which never
 reach chain.
 
+### Live method exercise (every public method)
+
+On 2026-10-20 the owner account `0x5B3661C5…4c89` ran every read and write
+method of `dao_resolve.py` against this deployment through the `genlayer` CLI.
+All 16 write methods executed; two of them returned the intended `EXPECTED:`
+rejections instead of mutating state, which is itself the behaviour under test.
+Every hash below is from a real transaction on chain.
+
+Rules and policy were exercised with a 60-second challenge window so that
+finality could be observed inside the session. The window was restored to the
+24-hour default afterwards.
+
+| # | Method | Args | Result | Transaction |
+|---|---|---|---|---|
+| 1 | `set_config` | `60 3 false` | ACCEPTED | `0x2c5b8d094d2447f576015cb403a4c595614e40d4c256f360ce75507eb622d341` |
+| 2 | `set_role` | `ESCALATOR <owner>` | ACCEPTED | `0x9be6f6318147aee53a1815da5b7b0f9475b8bfec59e43180d219f2210346c351` |
+| 3 | `set_role` | `RECORDER <owner>` | ACCEPTED | `0x09e0b102e17a942c00c3a1039b37399510448cd20c5f46df0a13cf9dea1fd4ac` |
+| 4 | `set_role` | `RULE_REGISTRAR <owner>` | ACCEPTED | `0xaf2aa22cfe20ec8b9eaccd765350c72c166b6fa514ba705fe0f2295b6447c5f2` |
+| 5 | `set_category_vote_required` | `DISCLOSURE true` | ACCEPTED | `0x946af0b0557aa5b2cc429e54fd16769868c1f6dfe452c9230d3a4f07d0827edf` |
+| 6 | `set_category_vote_required` | `DISCLOSURE false` | ACCEPTED | `0xd11783cb6d3805cca4ac00e9b58b3a3ad919cdbc1dc759b9fd51bb317fcccf7f` |
+| 7 | `transfer_ownership` | `<owner>` (self) | ACCEPTED, owner unchanged | `0x59f4603119c1440ebb092d7100a8f2b638aa0acd115c5cdf7f9c93f8aa9345ca` |
+| 8 | `register_rule` | `R1` TIMING, `MIN_ELAPSED` 100 | ACCEPTED | `0x2fbc83e486cf9b4d82855e9e35372f2c065e6eb1c11507ef3129c4eb21cb7538` |
+| 9 | `register_rule` | `R2` PROCESS, `NEEDS_INTERPRETATION` | ACCEPTED | `0x7578b870c92948225f1a536d92c38682eaf83c1cc4cf8196975761706469aeb2` |
+| 10 | `register_proposal` | `P1` | ACCEPTED | `0xddbcdaa585a4e41eb90d2ebd50f01d7085e1686afd820a5d640b20cc1a57a9e9` |
+| 11 | `record_process_event` | `P1 e1 SUBMITTED 1000` | ACCEPTED | `0x2fd9d1c4c8e04d422f83a6c793262de1eb684404e7156410edb6a3e1588be246` |
+| 12 | `record_process_event` | `P1 e2 VOTING_STARTED 1100` | ACCEPTED | `0x1150ffec1da21e565be690f13d698aa231d201552f3d622d6d1b9ed7b8452782` |
+| 13 | `open_dispute` | `D1` on `R1` | ACCEPTED | `0x542cac8c5f3914dc2e8e1db14b5f3ebf52c61adc7316ba44aa65ea1255dc10e9` |
+| 14 | `submit_evidence` | `D1` NEUTRAL statement | ACCEPTED | `0xcc4739a680520e838822cef9294cb346b9f8b004cc91155beee600d8aa510741` |
+| 15 | `evaluate_dispute` | `D1` (deterministic) | ACCEPTED, `COMPLIANT` | `0xc7d52e1975f5c18a7385cce474186c57137ef9a664b9805adb77362b6b8a1834` |
+| 16 | `challenge_assessment` | `D1`, no new evidence | ACCEPTED | `0xd3dbdc862582071ca02cd718790d7bd8b7c60b008514f1bc40c1c855bebcb88b` |
+| 17 | `re_evaluate` | `D1` | ACCEPTED, appends `D1#a2` | `0x67ef2cfe50036f054d105e9aaf9afa30fa905afd8b7be56878b17350dbb55ba5` |
+| 18 | `register_proposal` | `P2` | ACCEPTED | `0x120343c49aeab3183f7cc08703e3d63d82142b81975375d4e8c7bdf19aba6046` |
+| 19 | `open_dispute` | `D2` on `R2` | ACCEPTED | `0xba14e251d7d2ce7bcbd75cb4c41bf38e401b7a60b3387961d0ba99c11fe61fa9` |
+| 20 | `withdraw_dispute` | `D2` | ACCEPTED → `WITHDRAWN` | `0x3de9f275236aacd340ee90c8572085fcbaaf6558187d43799dcc0e3fabab97bc` |
+| 21 | `register_proposal` | `P3` | ACCEPTED | `0x5bd3a982acc8f02e58166a915b567211a2ffabfa8a6bcf9bf0018299a958b330` |
+| 22 | `open_dispute` | `D3` on `R2` | ACCEPTED | `0x2f288b6924781866667c0a9a1726137bc8f27e8da67c60e659ed8c045a7f9c06` |
+| 23 | `escalate_dispute` | `D3` | ACCEPTED → `ESCALATED` | `0xd521f1b36b6b1eac8bf708a7273593e7ca68058f58c967c4fffeca50b51f9fdf` |
+| 24 | `register_proposal` | `P4` | ACCEPTED | `0xb85c4773c4d794c58f52750a2cb3a41d281925b72af39ba59e8ccd3054ba11f1` |
+| 25 | `open_dispute` | `D4` on `R2` | ACCEPTED | `0xd79f6731cc6c72ac531640b84e7882eed69eb2e44b2042f5a58d7a8d9b5654f0` |
+| 26 | `submit_evidence` | `D4` DISPUTANT statement | ACCEPTED | `0xfe205e691d490882231af68a141a62b1db49c48e61c80661b83d48772b6c0e8e` |
+| 27 | `submit_evidence` | `D4` RESPONDENT statement | ACCEPTED | `0xf049ddfe33bd40a204a5960761cf3831afa225dab5be8030cc536fe13cfd5388` |
+| 28 | `evaluate_dispute` | `D4` (real consensus) | ACCEPTED, `INCONCLUSIVE` | `0x86235bceef53b366757de9d51bd4cec7adde8d36bd200a66ae799d3ccee88630` |
+| 29 | `challenge_assessment` | `D4` + 1 new evidence item | ACCEPTED | `0x7c9bd79bde94561d37765b29d3bd9fcbc7562d5c841887fd8285a54ad4cb8243` |
+| 30 | `re_evaluate` | `D4` (real consensus) | ACCEPTED, appends `D4#a2` | `0x11af57624fae1f870e2b1ae7d4b1c6a637d69b5d3f61b1217d88ef3e8e5d9ea9` |
+| 31 | `set_category_vote_required` | `TIMING true` | ACCEPTED | `0xe779fd062674d14cf8355be2870f69b1b431109aa95b03b3fef04d795ac3fee6` |
+| 32 | `register_proposal` | `P5` | ACCEPTED | `0xa92dfba4c19f3bacb35edd3941476ff3f2c58c132f7d86e5bb3481125a21de2d` |
+| 33 | `open_dispute` | `D5` on `R1` (TIMING) | ACCEPTED | `0xc7beeadfdedf415520316e29ac1a8b235f6394c885490fdd75aafc9e62ddec11` |
+| 34 | `evaluate_dispute` | `D5` (deterministic) | ACCEPTED, `COMPLIANT` | `0xdb3bb257d70c87c59377232f172bef7b6b81b1623b288047fa90fd50893675dd` |
+| 35 | `finalize_dispute` | `D5` in a vote-required category | **blocked** — `EXPECTED: category requires escalation to the DAO procedure` | `0x9deb9ad4ecf46f27444c416de9c78998bae3efc236f7f57665e0c83ed98af9ec` |
+| 36 | `escalate_dispute` | `D5` | ACCEPTED → `ESCALATED` | `0xf6c2a1574997537860cf515f7821fa2f7f50001ef8b4097345bad10ac59815f5` |
+| 37 | `finalize_dispute` | `D4` after the window | ACCEPTED → `FINALIZED` | `0xcd0a14526d5733278b82a9fb7bebaf8a9fec8bda030372eeb17978c6b9f7e0fc` |
+| 38 | `deprecate_rule` | `R1` | ACCEPTED → `DEPRECATED` | `0x45d3a27b5667d3fc809014d91d6b017c83bba710322f993dcef41986ea488966` |
+| 39 | `open_dispute` | `D6` on deprecated `R1` | **blocked** — `EXPECTED: rule is deprecated` | `0x0ecb0d43efffafd00b23d64f5a78983a6d60b21b08fb51adc8c4fa7cfa122207` |
+| 40 | `set_config` | `86400 3 false` (restore) | ACCEPTED | `0xd899a656996129a4dff62f6b87327cb2cbd0c0797a8b6664b2d61e8d4ecc5ac9` |
+| 41 | `set_category_vote_required` | `TIMING false` (restore) | ACCEPTED | `0xca1d0eef154d8586ac2fd808dc8934c664d41dd1f87855f64c36b733e59b8f1a` |
+
+A reverted write still produces an accepted transaction: `EXPECTED:` failures
+are consensus-valid outcomes, and the state is unchanged. Rows 35 and 39 are
+the two guards that were verified this way — the receipts carry
+`result: { status: 'rollback', payload: 'EXPECTED: …' }`.
+
+State machine as observed after the run:
+
+| Dispute | Path | Final status |
+|---|---|---|
+| `D1` | open → evaluate → challenge → re-evaluate | `RE_EVALUATED` |
+| `D2` | open → withdraw | `WITHDRAWN` |
+| `D3` | open → escalate | `ESCALATED` |
+| `D4` | open → evaluate → challenge → re-evaluate → finalize | `FINALIZED` |
+| `D5` | open → evaluate → finalize (blocked) → escalate | `ESCALATED` |
+| `D6` | open on a deprecated rule (blocked) | did not exist |
+
+Resulting verdicts, read back from chain — note that both decision paths were
+used, and the deterministic one never called the model:
+
+```text
+D1#a1  verdict=COMPLIANT     decided_by=DETERMINISTIC_CHECKS  produced_by=EVALUATION
+D1#a2  verdict=COMPLIANT     decided_by=DETERMINISTIC_CHECKS  produced_by=RE_EVALUATION
+D4#a1  verdict=INCONCLUSIVE  decided_by=INTERPRETATION        produced_by=EVALUATION
+D4#a2  verdict=INCONCLUSIVE  decided_by=INTERPRETATION        produced_by=RE_EVALUATION
+D5#a1  verdict=COMPLIANT     decided_by=DETERMINISTIC_CHECKS  produced_by=EVALUATION
+```
+
+`D4#a1` cited only the clause (`cited_evidence_ids: []`) and recorded
+`web_digest: 'D4#e1=41:No forum thr;D4#e2=65:A forum thre'`; the re-evaluation
+`D4#a2` cited `D4#e1`, `D4#e2` **and** the evidence added by the challenge
+(`D4#e3`). The verdict stayed `INCONCLUSIVE` because two contradictory text
+statements cannot establish that a discussion happened — the contract records
+insufficiency rather than inventing support. Consensus was reached with no
+retries in 29.2s (evaluate) and 23.6s (re-evaluate).
+
+Read methods returning live data (all succeeded):
+
+- `get_config` — policy and limits, restored to `challenge_window: 86400`,
+  `max_challenge_rounds: 3`, `vote_required_categories: []`.
+- `get_rule R1` / `get_rule_version R1 1` — `status: 'DEPRECATED'` after row 38,
+  with the pinned `MIN_ELAPSED` check intact.
+- `list_active_rules` — only `R2` remains active, because `R1` was deprecated.
+- `get_proposal P1` — `event_count: 2`.
+- `get_events P1` — both events with `recorded_by` and `timestamp_ref`.
+- `get_dispute D4` — `status: 'FINALIZED'`, `final_assessment_id: 'D4#a2'`,
+  `is_final: true`.
+- `get_dispute_status` — returned every status in the table above.
+- `get_evidence D4` — three items across two sides.
+- `get_assessment_history D1 0 5` — two append-only assessments, `round: 0`
+  then `round: 1`.
+- `get_challenges D4 0 5` — one challenge, `new_evidence_count: 1`.
+- `list_disputes 0 10` — all five disputes with their statuses.
+
 ### On-chain state
 
-This is a fresh deployment: the explorer reports `tx_count: 1` for the address
-(the deploy itself), and no state-changing calls have been made. That is
-deliberate — seeding rules and disputes requires the owner key, and this record
-only claims what was actually executed.
-
-`genlayer call 0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb get_config`:
+`genlayer call 0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb get_config` after the
+exercise: the policy is back at the 24-hour default, ownership is unchanged, and
+`R1` is deprecated by design (deprecation is permanent — that is the point of
+`deprecate_rule`). `R2` stays active for new disputes.
 
 ```text
 {
@@ -97,14 +204,17 @@ only claims what was actually executed.
 ```
 
 ```text
-genlayer call 0xb4d8bf96... list_active_rules --args 0 10  ->  []
-genlayer call 0xb4d8bf96... list_disputes     --args 0 10  ->  []
+genlayer call 0xb4d8bf96... list_active_rules --args 0 10  ->  [ R2 (PROCESS) ]
+genlayer call 0xb4d8bf96... list_disputes     --args 0 10  ->  D1..D5
 ```
 
-The 24-hour challenge window and 3 challenge rounds are the contract defaults;
-they are configuration, not a claim that a dispute was ever adjudicated at this
-address. The write-flow evidence below comes from earlier instances and from the
-integration suite, and is labelled as such.
+Not exercised on this address: a non-owner caller being rejected. The run used
+one key (the owner), so every authorization failure would have needed a second
+account; those paths are covered by `tests/direct/test_access_control.py`
+instead. `transfer_ownership` was executed with the current owner as the new
+owner, which exercises the write path and leaves control where it belongs; a
+handoff to a *different* address was deliberately not performed, because it
+would move control of this deployment irreversibly and only one key is held.
 
 ### Verify the deployment yourself
 
