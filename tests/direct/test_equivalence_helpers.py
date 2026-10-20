@@ -8,6 +8,9 @@ def payload(**overrides):
         "cited_clause_ids": ["R1"],
         "cited_evidence_ids": ["e1"],
         "reasoning_digest": "The evidence is sufficient.",
+        # Internal run metadata: evidence this run could actually read. Not
+        # model output, so it is copied into the payloads the validator sees.
+        "available_evidence_ids": ["e1", "e2"],
     }
     base.update(overrides)
     return base
@@ -190,3 +193,33 @@ def test_leader_decisive_verdict_without_citation_rejected(module, monkeypatch):
     assert run_validator(
         module, uncited, payload(), monkeypatch=monkeypatch
     ) is False
+
+
+def test_decisive_verdict_with_only_unreadable_evidence_rejected(module, monkeypatch):
+    """Citing an id whose fetch failed is not support, even if both sides agree."""
+    ctx = assessment_ctx(allowed_evidence_ids=["e1", "e2"])
+    unreadable = dict(payload(), available_evidence_ids=[])
+    assert run_validator(
+        module, unreadable, unreadable, ctx=ctx, monkeypatch=monkeypatch
+    ) is False
+
+
+def test_evidence_readable_in_only_one_run_rejected(module, monkeypatch):
+    """The shared citation must have been readable in the validator's run too."""
+    ctx = assessment_ctx(allowed_evidence_ids=["e1"])
+    assert run_validator(
+        module,
+        payload(available_evidence_ids=["e1"]),
+        payload(available_evidence_ids=[]),
+        ctx=ctx,
+        monkeypatch=monkeypatch,
+    ) is False
+
+
+def test_unreadable_evidence_does_not_block_inconclusive_verdict(module, monkeypatch):
+    """An INCONCLUSIVE finding may rest on evidence that could not be read."""
+    ctx = assessment_ctx(allowed_evidence_ids=["e1"])
+    inconclusive = payload(verdict="INCONCLUSIVE", available_evidence_ids=[])
+    assert run_validator(
+        module, inconclusive, inconclusive, ctx=ctx, monkeypatch=monkeypatch
+    ) is True

@@ -35,6 +35,8 @@ def test_min_elapsed_passes_at_boundary(dao, alice, bob, direct_vm):
     assert assessment["deterministic_fail_count"] == 0
     assert assessment["cited_clause_ids"] == ["R1"]
     assert assessment["cited_evidence_ids"] == []
+    # Code decided this verdict; no model was consulted.
+    assert assessment["decided_by"] == "DETERMINISTIC_CHECKS"
 
 
 def test_min_elapsed_fails_below_boundary(dao, alice, bob, direct_vm):
@@ -277,6 +279,9 @@ def test_failed_check_skips_llm_even_for_interpretive_rule(dao, alice, bob, dire
     assessment = dao.get_assessment_history("D1", 0, 10)[0]
     assert assessment["verdict"] == "VIOLATION"
     assert assessment["deterministic_fail_count"] == 1
+    # Code decided this even though the rule needs interpretation: the failed
+    # configured check is visible as such, not presented as a model finding.
+    assert assessment["decided_by"] == "DETERMINISTIC_CHECKS"
     assert len(direct_vm._llm_mocks) == 0
     assert len(direct_vm._llm_mocks_hit) == 0
 
@@ -302,6 +307,8 @@ def test_interpretive_rule_uses_llm_and_stores_consensus(dao, alice, bob, direct
     assert assessment["round"] == 0
     assert assessment["cited_clause_ids"] == ["R2"]
     assert assessment["cited_evidence_ids"] == ["D2#e1"]
+    # The verdict came from the consensus interpretation, not from a check.
+    assert assessment["decided_by"] == "INTERPRETATION"
     assert len(direct_vm._captured_validators) == 1
     assert direct_vm.run_validator() is True
 
@@ -495,3 +502,63 @@ def test_assessment_history_is_append_only_after_challenge_smoke(
     assert history[1]["round"] == 1
     assert history[0]["assessment_id"] == "D2#a1"
     assert history[1]["assessment_id"] == "D2#a2"
+
+
+def test_decisive_verdict_without_any_evidence_needs_only_the_rule(
+    dao, alice, bob, direct_vm
+):
+    """Documented policy: when no evidence ids exist at all, the rule citation
+    is sufficient for a decisive verdict (recorded events alone can decide an
+    interpretive clause). The challenge path remains available to contest it."""
+    add_interpretive_rule(dao)
+    add_proposal(dao)
+    add_review_events(dao, alice)
+    add_open_dispute(dao, rule_id="R2", dispute_id="D2")
+    mock_llm(
+        direct_vm,
+        {
+            "verdict": "COMPLIANT",
+            "confidence_band": "MEDIUM",
+            "cited_clause_ids": ["R2"],
+            "cited_evidence_ids": [],
+            "reasoning_digest": "The recorded events already satisfy the clause.",
+        },
+    )
+    direct_vm.sender = bob
+    dao.evaluate_dispute("D2")
+    assessment = dao.get_assessment_history("D2", 0, 10)[0]
+    assert assessment["verdict"] == "COMPLIANT"
+    assert assessment["cited_evidence_ids"] == []
+
+
+def test_a_failed_consensus_can_be_retried_and_is_not_stored_as_inconclusive(
+    dao, alice, bob, direct_vm
+):
+    add_interpretive_rule(dao)
+    add_proposal(dao)
+    add_review_events(dao, alice)
+    add_open_dispute(dao, rule_id="R2", dispute_id="D2")
+    mock_llm(direct_vm, "this is not json")
+
+    direct_vm.sender = bob
+    with pytest.raises(Exception, match="LLM_ERROR:"):
+        dao.evaluate_dispute("D2")
+    # Nothing was stored: the dispute keeps its status and empty history.
+    assert dao.get_dispute_status("D2") == "OPEN"
+    assert len(dao.get_assessment_history("D2", 0, 10)) == 0
+
+    direct_vm.clear_mocks()
+    mock_llm(
+        direct_vm,
+        {
+            "verdict": "COMPLIANT",
+            "confidence_band": "MEDIUM",
+            "cited_clause_ids": ["R2"],
+            "cited_evidence_ids": [],
+            "reasoning_digest": "The recorded events satisfy the clause.",
+        },
+    )
+    dao.evaluate_dispute("D2")
+    history = dao.get_assessment_history("D2", 0, 10)
+    assert len(history) == 1
+    assert history[0]["verdict"] == "COMPLIANT"

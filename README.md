@@ -36,28 +36,61 @@ consensus problem GenLayer is designed to solve.
   resolves the residual interpretive question.
 - Not a boilerplate fork or a generic "AI decides X" demo.
 
+## How consensus is used
+
+1. **Deterministic stage.** Structured checks (`MIN_ELAPSED`, `REQUIRED_EVENT`,
+   `MIN_COUNT`, `REQUIRED_ROLE`) run in plain Python against the recorded
+   events. If any fails, the verdict is `VIOLATION` and the model is never
+   called.
+2. **Interpretive stage.** For `NEEDS_INTERPRETATION` rules whose checks all
+   pass, the leader fetches bounded evidence (live URLs, text statements,
+   event references) and asks the model for a constrained JSON verdict: verdict
+   enum, confidence band, cited clause ids, cited evidence ids, and a reasoning
+   digest. The disputant's `claim_text` is included as delimited, explicitly
+   unverified context.
+3. **Validator consensus.** Each validator independently re-fetches the URLs,
+   rebuilds the prompt, and runs the model. Agreement requires an identical
+   verdict, confidence bands within one adjacent step, and shared citation
+   support: for a decisive verdict, leader and validator must cite at least one
+   common evidence id **that both runs could actually read**. A verdict citing
+   only a source that returned 503 is rejected with `LLM_ERROR: decisive
+   verdict cites no readable evidence`. `COMPLIANT` can never contradict a
+   deterministic `FAIL`, and reasoning text is excluded from the comparison.
+4. **Drift visibility.** The leader's result carries a bounded fingerprint of
+   the content it actually read (`web_digest`, e.g.
+   `D2#e1=189:The DAO foru;D2#e2=63:The author r`). It is stored on the
+   assessment for audit, not compared by validators: leader and validator fetch
+   independently, so consensus compares decisions rather than page bytes.
+5. **Safety.** Assessments are appended only after consensus. A failed
+   consensus is not an `INCONCLUSIVE` verdict: nothing is stored, the dispute
+   keeps its status and history, and the participant may retry or escalate.
+   Every assessment also reports `decided_by` (`DETERMINISTIC_CHECKS` or
+   `INTERPRETATION`), so a failed configured check is never mistaken for a
+   finding about the whole governance process.
+
+Full design: [docs/equivalence.md](docs/equivalence.md).
+
 ## Verified status
 
 | Item | Result |
 |---|---|
-| Contract | `contracts/dao_resolve.py` (1,395 lines) |
+| Contract | `contracts/dao_resolve.py` (1,463 lines) |
 | Lint | `genvm-lint` clean, 3 checks passed (one informational newer-runner notice) |
-| Direct tests | 157 passed in 5.77s (`pytest tests/direct/ -q`) |
-| Integration tests | 3 passed in 243.40s on StudioNet, as recorded in `deployments/studionet.md` |
-| StudioNet deployment (recorded revision) | `0x48179D48495B7199a3FCb939c3f0F73a23c50b70` |
+| Direct tests | 171 passed in 5.89s (`python3.12 -m pytest tests/direct/ -q`) |
+| Integration tests | 3 passed in 209.44s on StudioNet for this source (test deployments; see `deployments/studionet.md`) |
+| StudioNet deployment | `0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA` |
+| StudioNet deploy transaction | `0x3157b6a8137b74a162afcfbb288da91bd635062e0d7feaac60179aa3762c9f66` |
 | Bradbury deployment | Blocked by a node-side "gas limit too high" rejection; no funds spent |
 
-> **Deployed revision note:** the StudioNet record documents the revision that
-> was deployed and exercised. The current working tree contains later contract
-> changes (pinned `REQUIRED_ROLE` addresses, improved multi-pair `MIN_ELAPSED`
-> handling, evidence-overlap checking, and prompt refinements). Those changes are
-> covered by the 157 direct tests but have not been redeployed. Do not assume the
-> on-chain code is byte-identical to `contracts/dao_resolve.py`.
+The StudioNet record documents the revision **before** the readable-citation
+support floor and the derived `decided_by` field. The working tree is newer
+than the deployed contract, so the on-chain source no longer matches
+`contracts/dao_resolve.py`; redeployment is pending.
 
 StudioNet explorer:
 
-- Contract: https://explorer-studio.genlayer.com/address/0x48179D48495B7199a3FCb939c3f0F73a23c50b70
-- Deploy transaction: https://explorer-studio.genlayer.com/tx/0x4889cd93bf8ce27b2107c11e474bfea3e06e44fa2f0d6d4ff8fd241a592c84ab
+- Contract: https://explorer-studio.genlayer.com/address/0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA
+- Deploy transaction: https://explorer-studio.genlayer.com/tx/0x3157b6a8137b74a162afcfbb288da91bd635062e0d7feaac60179aa3762c9f66
 
 The full deployment record, write transaction hashes, read outputs, and schema
 are in [deployments/studionet.md](deployments/studionet.md) and
@@ -134,7 +167,9 @@ Read methods:
 | `get_assessment_history` | Append-only assessments with check results |
 | `get_challenges` | Bounded challenge records |
 
-Exact signatures are documented in [docs/api.md](docs/api.md).
+Exact signatures live in the contract source and are summarized in
+[docs/design.md](docs/design.md); read methods return the full assessment
+record, including check results, citations, and the evidence fingerprint.
 
 ## Quick start
 
@@ -150,30 +185,46 @@ gltest tests/integration/ -v -s --network studionet
 
 Deployment uses the GenLayer CLI with a built-in network selected through
 `genlayer network set`; RPC endpoints are not overridden manually. See
-[docs/deployment.md](docs/deployment.md).
+[deployments/studionet.md](deployments/studionet.md).
 
 ## Documentation
 
 - [AGENTS.md](AGENTS.md) — operating rules and full project specification
-- [docs/design.md](docs/design.md) — design overview
+- [docs/design.md](docs/design.md) — design overview and state machine
 - [docs/domain-model.md](docs/domain-model.md) — entities and fields
 - [docs/state-machine.md](docs/state-machine.md) — transitions and guards
 - [docs/access-control.md](docs/access-control.md) — roles and trust assumptions
 - [docs/limits.md](docs/limits.md) — bounded inputs and lifecycle limits
 - [docs/api.md](docs/api.md) — public interface
 - [docs/equivalence.md](docs/equivalence.md) — consensus and equivalence design
-- [docs/threat-model.md](docs/threat-model.md) — threats and safeguards
-- [docs/examples.md](docs/examples.md) — worked scenarios
+- [docs/threat-model.md](docs/threat-model.md) — threats, safeguards, and trust assumptions
+- [docs/examples.md](docs/examples.md) — worked scenarios and two sample DAOs
 - [docs/testing.md](docs/testing.md) — test strategy and quality gates
 - [docs/deployment.md](docs/deployment.md) — deployment procedure
 - [docs/glossary.md](docs/glossary.md) — terms used by the project
+- [deployments/studionet.md](deployments/studionet.md) — deployment record
+
+## Reuse
+
+The contract is rule-agnostic: any DAO can register its own rules, categories,
+and deterministic checks without changing the contract.
+[docs/examples.md](docs/examples.md) walks through two complete samples — a
+grants council (quorum + community-discussion rules, with an escalation path)
+and a treasury payments DAO (timing + disclosure rules) — with the expected
+assessment and challenge outcome for each dispute.
 
 ## Limitations
 
 - Recorders are trusted to record process events honestly.
 - Rule registrars are trusted to publish the rules the DAO intends to use.
 - Assessments are advisory unless a DAO explicitly wires them into its process.
-- External evidence can change, disappear, or be manipulated.
+- External evidence can change, disappear, or be manipulated; leader and
+  validator fetch independently, so the stored fingerprint is drift visibility,
+  not proof of authenticity.
+- Evidence citations are a support floor, not proof of relevance or
+  sufficiency.
+- A failed deterministic check produces `VIOLATION` against the registered rule
+  version only; it is a failed configured requirement, not a legal finding.
 - The contract does not verify identity, hold funds, or execute governance actions.
 - Bradbury deployment is currently blocked by a node-side gas-limit rejection.
 

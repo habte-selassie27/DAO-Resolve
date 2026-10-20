@@ -47,6 +47,31 @@ invariants rather than requiring identical text.
 - All interpolated text is escaped before insertion into prompt delimiters.
 - Evidence is labeled by side and presented symmetrically. The disputant's
   claim is explicitly marked as an unverified assertion, not proof.
+- Each item carries an `available="true|false"` attribute. Content that could
+  not be read is shown as `UNAVAILABLE` and cannot support a decisive verdict.
+
+### Snapshot fingerprint (drift visibility)
+
+Each run that gathers evidence computes a bounded fingerprint of what it
+actually saw: `evidence_id=character_count:prefix` per item, or
+`evidence_id=UNAVAILABLE` when a source could not be read. The leader's
+fingerprint travels with the agreed result and is stored on the assessment as
+`web_digest` (512 characters max).
+
+- The fingerprint is **not** part of consensus. It is an audit artifact: it
+  shows which page content the leader's assessment was based on, and makes
+  source drift visible after the fact.
+- It is a change detector, not a cryptographic hash and not proof of
+  authenticity. A tampered page yields a different fingerprint, but an
+  authentic-looking page is not thereby authentic.
+- Leader and validator fetch independently, so their fingerprints may differ.
+  That is expected: consensus compares decisions, not page bytes. A verdict
+  that survives that difference is evidence of robustness; a verdict that
+  flips when the page changes is a signal for the challenge path.
+- Drift has one hard edge: if a source the leader cited becomes unreadable for
+  the validator, the validator cannot confirm readable support, so consensus
+  fails and nothing is stored rather than agreeing on an unreadable citation.
+- Deterministic assessments record an empty fingerprint: no page was fetched.
 
 ## Equivalence rule
 
@@ -59,11 +84,20 @@ A validator accepts the leader result only when all of these hold:
    the ids that were provided.
 4. **Decisive verdicts are cited** — a `COMPLIANT` or `VIOLATION` verdict must
    cite the pinned rule. When evidence ids were provided, it must cite at least
-   one evidence id.
-5. **Evidence overlap** — when evidence ids were provided and the leader's
-   verdict is not `INCONCLUSIVE`, the validator must have relied on at least one
-   evidence id that the leader also cited. This rejects "different evidence,
-   same answer."
+   one evidence id. When no evidence was submitted at all, the rule citation
+   alone is sufficient: recorded events can decide an interpretive clause.
+   This is a deliberate policy (recorded events are evidence the DAO itself
+   supplied), and it is covered by a direct test.
+5. **Evidence overlap and readability** — when evidence ids were provided and
+   the leader's verdict is not `INCONCLUSIVE`, there must be at least one
+   evidence id that the leader cited, the validator also cited, and **both
+   runs could actually read**. This rejects "different evidence, same answer"
+   and agreement that rests only on a source that returned 503 or was never
+   fetched. Each run enforces the same floor locally: a decisive verdict that
+   cites no readable evidence fails with
+   `LLM_ERROR: decisive verdict cites no readable evidence` before consensus is
+   even compared. `INCONCLUSIVE` is exempt: a finding of insufficiency may
+   legitimately rest on unreadable sources.
 6. **Deterministic consistency** — if any deterministic check failed, neither
    the leader nor the validator may return `COMPLIANT`.
 7. **Reasoning is ignored** — `reasoning_digest` is stored for humans but is not
@@ -92,13 +126,22 @@ Before comparison:
 | Invalid JSON / missing key / unknown enum | `LLM_ERROR:`; no assessment appended |
 | Hallucinated citation | `LLM_ERROR: cited id not provided` |
 | Decisive verdict without rule or evidence citation | `LLM_ERROR:`; no assessment appended |
+| Decisive verdict citing only unreadable evidence | `LLM_ERROR:`; no assessment appended |
 | Deterministic failure overridden by `COMPLIANT` | `LLM_ERROR:`; no assessment appended |
 | Web source unavailable | Marked `UNAVAILABLE`; verdict may be `INCONCLUSIVE` |
+| Leader and validator saw different page content | Not an error: consensus compares decisions, not page bytes. The leader's fingerprint is stored so the drift is auditable |
+| The shared cited source became unreadable for one run | Consensus fails: readable support cannot be confirmed; nothing is stored, retry or escalate |
 | Transient upstream failure | `TRANSIENT:`; validators may agree on retry |
 | Leader error and validator error | `EXPECTED` / `EXTERNAL` must match exactly; `TRANSIENT` matches; `LLM_ERROR` always forces retry |
 
 After consensus, the agreed result is normalized again before storage. State is
 mutated only after the consensus block returns.
+
+A failed consensus is **not** an `INCONCLUSIVE` assessment. Nothing is
+appended, the dispute keeps its prior status and history, and the participant
+may call `evaluate_dispute` or `re_evaluate` again. If repeated attempts do
+not converge, the escalation role can hand the dispute to the DAO's own
+procedure.
 
 ## Re-evaluation
 
@@ -107,7 +150,10 @@ The same block is used with additional context:
 - Prior verdict, confidence band, round, and reasoning digest.
 - Challenge reason and new-evidence count.
 
-The same equivalence rule applies. The prior assessment is never overwritten; the
+The same equivalence rule applies. The prompt labels the prior assessment as a
+prior opinion rather than ground truth and tells the model to re-derive the
+verdict from the clause, events, and evidence, so a persuasive challenge can
+correct an earlier assessment. The prior assessment is never overwritten; the
 new assessment is appended with `produced_by = RE_EVALUATION`.
 
 ## Why not `strict_eq`
@@ -122,14 +168,21 @@ text would reject honest consensus and reward wording coincidence.
   normalization, citation bounds, deterministic consistency, and citation
   requirements.
 - `tests/direct/test_equivalence_helpers.py` covers band adjacency, citation
-  overlap, hallucination rejection, error equivalence, and deterministic
-  override rejection.
+  overlap, hallucination rejection, error equivalence, deterministic override
+  rejection, and readable-support rejection (unreadable evidence cited, or
+  readable in only one run; `INCONCLUSIVE` exempt).
 - `tests/direct/test_web_evidence.py` covers fetch limits, unavailable sources,
-  prompt escaping, and stable error prefixes.
+  prompt escaping, stable error prefixes, the snapshot fingerprint, page drift
+  between the leader's fetch and the validator's re-fetch, and rejection of a
+  decisive verdict that cites only an unreadable source.
+- `tests/direct/test_challenges.py` covers challenge effects: no reason and no
+  evidence, irrelevant evidence, contradictory evidence, and a persuasive
+  correction that flips the verdict.
 - `tests/integration/test_consensus.py` exercises real leader/validator
   agreement and a challenge round trip on StudioNet.
 
-See [testing.md](testing.md) for commands and current results.
+Run `pytest tests/direct/ -v` for the direct suite and
+`gltest tests/integration/ -v -s --network studionet` for real consensus.
 
 ## Related documents
 

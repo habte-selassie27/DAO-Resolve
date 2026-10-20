@@ -49,6 +49,17 @@ appropriate for small DAOs.
 Role names are `RULE_REGISTRAR`, `RECORDER`, and `ESCALATOR`. They are case-
 insensitive on input and normalized to uppercase.
 
+## Role addresses are pinned per rule version
+
+A `REQUIRED_ROLE` check stores the role address in the rule version at
+registration time (`StructuredCheck.role_address`). Rotating a role later does
+not change how events recorded under an existing rule version are judged: to
+adopt a new address, publish a new rule version.
+
+A rule registered while the role was still unset stores the zero address and
+fails every `REQUIRED_ROLE` check with `role_unset role=<role>` until a new
+version is published. This keeps historical assessments reproducible.
+
 ## Trust assumptions
 
 - **Recorders are trusted** to record process events honestly. The contract

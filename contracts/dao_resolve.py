@@ -31,6 +31,11 @@ STATUS_RE_EVALUATED, STATUS_FINALIZED = "RE_EVALUATED", "FINALIZED"
 STATUS_ESCALATED, STATUS_WITHDRAWN = "ESCALATED", "WITHDRAWN"
 TERMINAL_STATUSES = (STATUS_FINALIZED, STATUS_ESCALATED, STATUS_WITHDRAWN)
 PRODUCED_EVALUATION, PRODUCED_RE_EVALUATION = "EVALUATION", "RE_EVALUATION"
+# Why an assessment reached its verdict. Derived at read time from the pinned
+# rule interpretation and the deterministic fail count; never stored, so the
+# distinction between "a configured check failed" and "the model interpreted
+# an ambiguous clause" cannot drift from the evidence behind it.
+DECIDED_DETERMINISTIC, DECIDED_INTERPRETATION = "DETERMINISTIC_CHECKS", "INTERPRETATION"
 ROLE_RULE_REGISTRAR, ROLE_RECORDER, ROLE_ESCALATOR = "RULE_REGISTRAR", "RECORDER", "ESCALATOR"
 ASSIGNABLE_ROLES = (ROLE_RULE_REGISTRAR, ROLE_RECORDER, ROLE_ESCALATOR)
 ERROR_EXPECTED, ERROR_EXTERNAL, ERROR_TRANSIENT, ERROR_LLM = (
@@ -94,7 +99,7 @@ class Assessment:
     assessment_id: str; dispute_id: str; round: u32
     verdict: str; confidence_band: str; reasoning_digest: str
     produced_by: str; created_at: u64
-    deterministic_pass_count: u32; deterministic_fail_count: u32
+    deterministic_pass_count: u32; deterministic_fail_count: u32; web_digest: str
 
 @allow_storage
 @dataclass
@@ -311,6 +316,15 @@ def _escape_attr(value: str) -> str:
     """Escape text interpolated into a prompt tag attribute."""
     return _escape_text(value).replace('"', "&quot;").replace("'", "&#x27;")
 
+def _evidence_fingerprint(gathered: list) -> str:
+    """Fingerprint (id=len:prefix) of what this run fetched; URL drift shows here."""
+    items = [
+        item["id"] + "=" + ("UNAVAILABLE" if not item["available"]
+                            else str(len(item["text"])) + ":" + _escape_text(item["text"][:12]))
+        for item in gathered
+    ]
+    return ";".join(items)[:512]
+
 def _build_prompt(ctx: dict, evidence: list) -> str:
     """Build the constrained interpretation prompt. Evidence is always DATA."""
     check_lines = [
@@ -337,6 +351,8 @@ def _build_prompt(ctx: dict, evidence: list) -> str:
             f'</prior_assessment>\n<challenge>\n'
             f'reason={_escape_text(ctx["challenge_reason"])}\n'
             f'new_evidence_count={ctx["challenge_evidence_count"]}\n</challenge>\n'
+            "The prior assessment is a prior opinion, not ground truth, and the challenge may be\n"
+            "correct. Re-derive the verdict from the clause, the events, and the evidence.\n"
         )
     return (
         "You are the interpretation stage of DAOResolve, an advisory DAO dispute primitive.\n"
@@ -355,6 +371,8 @@ def _build_prompt(ctx: dict, evidence: list) -> str:
         "7. cited_clause_ids must be a subset of the allowed clause ids. cited_evidence_ids must be a subset of the allowed evidence ids.\n"
         "   A COMPLIANT or VIOLATION verdict MUST cite the pinned clause id and, when evidence ids are\n"
         "   provided, at least one evidence id. An uncited decisive verdict is rejected.\n"
+        "   Never cite an evidence id whose available attribute is \"false\": content that could not\n"
+        "   be read cannot support a decisive verdict.\n"
         "8. reasoning_digest is for humans and is NOT compared by validators.\n"
         "\n"
         f'<clause id="{ctx["rule_id"]}" version="{ctx["rule_version"]}" '
@@ -376,11 +394,44 @@ def _build_prompt(ctx: dict, evidence: list) -> str:
         "<allowed_evidence_ids>" + ", ".join(ctx["allowed_evidence_ids"]) + "</allowed_evidence_ids>\n"
     )
 
+def _available_evidence_ids(gathered: list) -> list:
+    """Ids this run could actually read. Unreadable evidence proves nothing."""
+    return [item["id"] for item in gathered if item["available"]]
+
+def _require_readable_support(result: dict, ctx: dict, available: list) -> None:
+    """A decisive verdict must rest on evidence this run actually read.
+
+    Citing only a URL that returned 503 (or was never fetched) gives a verdict
+    the appearance of support without any. This is the deterministic floor
+    under the review finding that citation checking validates ids, not support.
+    """
+    decisive = result["verdict"] == "COMPLIANT" or result["verdict"] == "VIOLATION"
+    if not decisive or not ctx["allowed_evidence_ids"]:
+        return
+    for evidence_id in result["cited_evidence_ids"]:
+        if evidence_id in available:
+            return
+    _fail(ERROR_LLM + " decisive verdict cites no readable evidence")
+
+def _result_available_ids(result) -> list:
+    """Availability metadata carried by an interpretation result (not model output)."""
+    if not isinstance(result, dict):
+        return []
+    raw = result.get("available_evidence_ids", [])
+    if not isinstance(raw, list):
+        return []
+    return [item for item in raw if isinstance(item, str)]
+
 def _interpret_once(ctx: dict) -> dict:
     """Leader and validator both execute this from the same context."""
     evidence = _gather_evidence(ctx["evidence"])
     raw = gl.nondet.exec_prompt(_build_prompt(ctx, evidence), response_format="json")
-    return _normalize_llm_result(raw, ctx)
+    result = _normalize_llm_result(raw, ctx)
+    available = _available_evidence_ids(evidence)
+    _require_readable_support(result, ctx, available)
+    result["web_digest"] = _evidence_fingerprint(evidence)
+    result["available_evidence_ids"] = available
+    return result
 
 def _validate_interpretation(leader_res, ctx: dict) -> bool:
     """Validator re-derives the verdict and compares meaning, not wording.
@@ -392,17 +443,23 @@ def _validate_interpretation(leader_res, ctx: dict) -> bool:
     if not isinstance(leader_res, gl.vm.Return):
         return _handle_leader_error(leader_res, ctx)
     try:
-        validator = _normalize_llm_result(_interpret_once(ctx), ctx)
+        validator_raw = _interpret_once(ctx)
+        validator = _normalize_llm_result(validator_raw, ctx)
         leader = _normalize_llm_result(leader_res.calldata, ctx)
     except Exception:
         return False
     if ctx["det_fail"] and (leader["verdict"] == "COMPLIANT" or validator["verdict"] == "COMPLIANT"):
         return False
-    # A decisive verdict must rest on at least one piece of evidence that both
-    # independent runs relied on. This rejects "different evidence, same answer".
+    # A decisive verdict must rest on at least one evidence item that BOTH
+    # independent runs could read and cited. This rejects "different evidence,
+    # same answer" and agreement that rests only on an unreadable source.
     if ctx["allowed_evidence_ids"] and leader["verdict"] != "INCONCLUSIVE":
+        leader_readable = _result_available_ids(leader_res.calldata)
+        validator_readable = _result_available_ids(validator_raw)
         if not any(
             evidence_id in validator["cited_evidence_ids"]
+            and evidence_id in leader_readable
+            and evidence_id in validator_readable
             for evidence_id in leader["cited_evidence_ids"]
         ):
             return False
@@ -916,7 +973,7 @@ class DAOResolve(gl.Contract):
                 if det_fail
                 else "All configured structured checks passed; this assessment is against the registered rule version only."
             )
-            band, cited_clauses, cited_evidence = "HIGH", [rule.rule_id], []
+            band, cited_clauses, cited_evidence, web_digest = "HIGH", [rule.rule_id], [], ""
         else:
             ctx = self._build_context(dispute, rule, results, is_re)
 
@@ -927,7 +984,9 @@ class DAOResolve(gl.Contract):
                 return _validate_interpretation(leader_result, ctx)
 
             agreed = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
-            # Defensive re-validation after consensus before anything is stored.
+            # The agreed result is the leader's output, which carries what the
+            # leader fetched. Re-validate defensively before storing anything.
+            web_digest = str(agreed.get("web_digest", ""))[:512] if isinstance(agreed, dict) else ""
             agreed = _normalize_llm_result(agreed, ctx)
             verdict, band = agreed["verdict"], agreed["confidence_band"]
             cited_clauses, cited_evidence = agreed["cited_clause_ids"], agreed["cited_evidence_ids"]
@@ -936,7 +995,7 @@ class DAOResolve(gl.Contract):
         self._append_assessment(
             dispute, results, verdict, band, cited_clauses, cited_evidence,
             reasoning, PRODUCED_RE_EVALUATION if is_re else PRODUCED_EVALUATION,
-            pass_count, fail_count, now,
+            pass_count, fail_count, now, web_digest,
         )
         dispute.last_assessment_at = u64(now)
         dispute.challenge_deadline = u64(now + int(dispute.challenge_window))
@@ -946,16 +1005,10 @@ class DAOResolve(gl.Contract):
         results = []
         if rule_key_value not in self.rule_checks:
             return results
-        events = self.proposal_events[proposal_id]
         for check in self.rule_checks[rule_key_value]:
-            outcome, detail = _check_one(check, events)
+            outcome, detail = _check_one(check, self.proposal_events[proposal_id])
             results.append(
-                {
-                    "check_id": check.check_id,
-                    "kind": check.kind,
-                    "result": outcome,
-                    "detail": detail,
-                }
+                {"check_id": check.check_id, "kind": check.kind, "result": outcome, "detail": detail}
             )
         return results
 
@@ -969,9 +1022,7 @@ class DAOResolve(gl.Contract):
         event_counts = {}
         for event in events:
             event_counts[event.event_type] = event_counts.get(event.event_type, 0) + 1
-        event_summary = ",".join(
-            key + "=" + str(value) for key, value in event_counts.items()
-        )
+        event_summary = ",".join(key + "=" + str(value) for key, value in event_counts.items())
         if total_events <= MAX_PROMPT_EVENTS:
             selected = [event for event in events]
         else:
@@ -979,13 +1030,8 @@ class DAOResolve(gl.Contract):
             selected = [events[i] for i in range(half)]
             selected += [events[i] for i in range(total_events - half, total_events)]
         event_dicts = [
-            {
-                "event_id": event.event_id,
-                "event_type": event.event_type,
-                "actor": event.actor.as_hex,
-                "timestamp_ref": int(event.timestamp_ref),
-                "evidence_ref": event.evidence_ref,
-            }
+            {"event_id": event.event_id, "event_type": event.event_type, "actor": event.actor.as_hex,
+             "timestamp_ref": int(event.timestamp_ref), "evidence_ref": event.evidence_ref}
             for event in selected
         ]
         det_fail = sum(1 for result in results if result["result"] == CHECK_FAIL) > 0
@@ -993,10 +1039,9 @@ class DAOResolve(gl.Contract):
         assessments = self.dispute_assessments[dispute.dispute_id]
         if len(assessments) > 0:
             latest = assessments[len(assessments) - 1]
-            prior_verdict = latest.verdict
-            prior_band = latest.confidence_band
-            prior_round = int(latest.round)
-            prior_reasoning = latest.reasoning_digest
+            prior_verdict, prior_band, prior_round, prior_reasoning = (
+                latest.verdict, latest.confidence_band, int(latest.round), latest.reasoning_digest,
+            )
         challenge_reason, challenge_evidence_count = "", 0
         challenges = self.dispute_challenges[dispute.dispute_id]
         if len(challenges) > 0:
@@ -1033,7 +1078,8 @@ class DAOResolve(gl.Contract):
 
     def _append_assessment(self, dispute: Dispute, results: list, verdict: str, band: str,
                            cited_clauses: list, cited_evidence: list, reasoning: str,
-                           produced_by: str, pass_count: int, fail_count: int, now: int) -> None:
+                           produced_by: str, pass_count: int, fail_count: int, now: int,
+                           web_digest: str = "") -> None:
         assessments = self.dispute_assessments[dispute.dispute_id]
         assessment_id = dispute.dispute_id + "#a" + str(len(assessments) + 1)
         assessments.append(
@@ -1048,6 +1094,7 @@ class DAOResolve(gl.Contract):
                 created_at=u64(now),
                 deterministic_pass_count=u32(pass_count),
                 deterministic_fail_count=u32(fail_count),
+                web_digest=web_digest,
             )
         )
         stored_checks = self.assessment_checks.get_or_insert_default(assessment_id)
@@ -1284,7 +1331,8 @@ class DAOResolve(gl.Contract):
         latest = {}
         if len(assessments) > 0:
             latest = self._assessment_to_dict(
-                assessments[len(assessments) - 1], dispute.final_assessment_id
+                assessments[len(assessments) - 1], dispute.final_assessment_id,
+                self._rule_interpretation(dispute),
             )
         return {
             "dispute_id": dispute.dispute_id, "rule_id": dispute.rule_id,
@@ -1342,12 +1390,30 @@ class DAOResolve(gl.Contract):
     def get_assessment_history(self, dispute_id: str, offset: u32, limit: u32) -> list:
         """Return a bounded page of append-only assessments with full details."""
         dispute = self._load_dispute(dispute_id)
+        interpretation = self._rule_interpretation(dispute)
         return [
-            self._assessment_to_dict(assessment, dispute.final_assessment_id)
+            self._assessment_to_dict(assessment, dispute.final_assessment_id, interpretation)
             for assessment in _page(self.dispute_assessments[dispute.dispute_id], offset, limit)
         ]
 
-    def _assessment_to_dict(self, assessment: Assessment, final_id: str = "") -> dict:
+    def _rule_interpretation(self, dispute: Dispute) -> str:
+        """Interpretation mode of the rule version this dispute is pinned to."""
+        key = _rule_key(dispute.rule_id, int(dispute.rule_version))
+        return self.rules[key].interpretation
+
+    def _decided_by(self, assessment: Assessment, interpretation: str) -> str:
+        """Whether code or model interpretation produced this verdict.
+
+        A failed structured check always decides the verdict in code, even for
+        a NEEDS_INTERPRETATION rule. Otherwise a DETERMINISTIC_ONLY rule is
+        decided by its checks and an interpretive rule by the consensus block.
+        """
+        if int(assessment.deterministic_fail_count) > 0 or interpretation == INTERP_DETERMINISTIC:
+            return DECIDED_DETERMINISTIC
+        return DECIDED_INTERPRETATION
+
+    def _assessment_to_dict(self, assessment: Assessment, final_id: str = "",
+                            interpretation: str = "") -> dict:
         aid = assessment.assessment_id
         checks = []
         if aid in self.assessment_checks:
@@ -1375,7 +1441,9 @@ class DAOResolve(gl.Contract):
             "deterministic_pass_count": int(assessment.deterministic_pass_count),
             "deterministic_fail_count": int(assessment.deterministic_fail_count),
             "deterministic_results": checks, "cited_clause_ids": clauses,
-            "cited_evidence_ids": evidence, "is_final": aid == final_id,
+            "cited_evidence_ids": evidence, "web_digest": assessment.web_digest,
+            "decided_by": self._decided_by(assessment, interpretation),
+            "is_final": aid == final_id,
         }
 
     @gl.public.view

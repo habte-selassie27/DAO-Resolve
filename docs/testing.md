@@ -5,8 +5,8 @@
 | Gate | Result |
 |---|---|
 | `genvm-lint` | Clean; 3 checks passed. One informational notice about a newer runner |
-| Direct tests | **157 passed in 5.77s** |
-| Integration tests | **3 passed in 243.40s on StudioNet** for the deployed revision, per `deployments/studionet.md` |
+| Direct tests | **171 passed in 5.89s** |
+| Integration tests | **3 passed in 209.44s on StudioNet** for the current source, and 3 passed in 270.07s for the earlier deployed revision; see `deployments/studionet.md` |
 
 Commands used:
 
@@ -38,7 +38,7 @@ pytest tests/direct/ -v
 | `test_evaluation_parsing.py` | JSON parsing, aliases, citations, deterministic override |
 | `test_challenges.py` | Challenge windows, rounds, re-evaluation, escalation, finality |
 | `test_equivalence_helpers.py` | Verdict/band equivalence, citation overlap, error agreement |
-| `test_web_evidence.py` | URL fetching, unavailable evidence, prompt escaping, error prefixes |
+| `test_web_evidence.py` | URL fetching, unavailable evidence, prompt escaping, error prefixes, evidence fingerprint, page drift |
 
 ### Highlights
 
@@ -52,6 +52,21 @@ pytest tests/direct/ -v
 - Hostile evidence ("ignore previous instructions") cannot change a
   deterministic `FAIL`.
 - LLM errors leave the dispute unchanged.
+- A failed consensus stores nothing, leaves the dispute open, and a retry
+  succeeds.
+- A decisive verdict with no submitted evidence may cite only the rule; with
+  evidence present, leader and validator must share a cited evidence id that
+  both runs could read.
+- A decisive verdict citing only an unreadable source fails with
+  `LLM_ERROR: decisive verdict cites no readable evidence` and stores nothing;
+  `INCONCLUSIVE` is exempt.
+- `decided_by` reports `DETERMINISTIC_CHECKS` or `INTERPRETATION`, so a failed
+  configured check is distinguishable from a model finding.
+- Challenge effects: no reason and no evidence is rejected; irrelevant evidence
+  does not move a deterministic verdict; contradictory evidence can end
+  `INCONCLUSIVE`; a persuasive correction can flip the verdict.
+- Page drift between the leader's fetch and the validator's re-fetch: the same
+  verdict still reaches consensus, a changed verdict is rejected.
 - Errors use stable prefixes and contain no raw model text.
 
 ## Integration tests
@@ -70,9 +85,12 @@ Coverage:
 - Invalid transition fails with the documented `EXPECTED:` prefix.
 - Reads return state written by transactions.
 
-The recorded run deployed three contracts and produced `MAJORITY_AGREE`
-receipts. It covers the revision recorded in the deployment log, not the later
-working-tree changes. See [../deployments/studionet.md](../deployments/studionet.md)
+The latest recorded run deployed three contracts from the current source and
+produced `MAJORITY_AGREE` receipts, including on-chain `decided_by` values for
+both a deterministic and an interpretive assessment. The canonical deployment
+address in the log predates the current source, so those test contracts are the
+on-chain evidence for this revision. See
+[../deployments/studionet.md](../deployments/studionet.md)
 for addresses and transaction hashes.
 
 ## Quality gates

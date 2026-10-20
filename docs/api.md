@@ -172,7 +172,7 @@ Errors: `EXPECTED: caller is not authorized`, `EXPECTED: invalid state transitio
 | `get_dispute_status(dispute_id)` | Status only |
 | `list_disputes(offset, limit)` | Disputes in opening order |
 | `get_evidence(dispute_id, offset, limit)` | Bounded evidence references |
-| `get_assessment_history(dispute_id, offset, limit)` | Append-only assessments |
+| `get_assessment_history(dispute_id, offset, limit)` | Append-only assessments, including check results, citations, the evidence fingerprint (`web_digest`), and `decided_by` (`DETERMINISTIC_CHECKS` or `INTERPRETATION`) |
 | `get_challenges(dispute_id, offset, limit)` | Bounded challenge records |
 
 Read methods do not mutate state. All list reads use a bounded page size of 1–50.

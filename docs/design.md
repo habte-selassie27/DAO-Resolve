@@ -27,11 +27,11 @@ meaning of a constrained verdict.
 
 ## 2.1 Implementation status
 
-The contract is implemented in `contracts/dao_resolve.py`, lint-clean, and
-covered by 157 passing direct tests. An earlier revision is deployed on StudioNet
-at `0x48179D48495B7199a3FCb939c3f0F73a23c50b70`; integration tests recorded 3
-passes for that revision. The working tree contains later contract changes that
-have not been redeployed. See [deployment.md](deployment.md) and
+The contract is implemented in `contracts/dao_resolve.py` (1,463 lines),
+lint-clean, and covered by 171 passing direct tests. The latest deployment on
+StudioNet is `0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA`, which predates the
+readable-citation floor and the derived `decided_by` field in the working tree;
+redeployment is pending. See [deployment.md](deployment.md) and
 [testing.md](testing.md).
 
 ## 3. Core design principles
@@ -91,8 +91,12 @@ evaluate_dispute(dispute_id)
        the leader fetches bounded evidence and proposes a constrained verdict;
        validators independently fetch/derive and compare under the equivalence
        rule. Web fetching and interpretation happen in one consensus block.
+       The leader's result also carries a fingerprint of the content it read
+       (`web_digest`), stored for audit; it is not compared by validators.
   7. Validate the agreed result: known enums, cited ids subset, deterministic
-     consistency.
+     consistency, and shared evidence support for decisive verdicts. The shared
+     citation must have been readable in both runs; a decisive verdict that
+     cites only an unreadable source fails rather than looking sourced.
   8. Append the assessment and update the dispute status.
 ```
 
@@ -126,10 +130,17 @@ overturned into `COMPLIANT` by the model.
 - Assessments, evidence, and challenges are append-only.
 - Assessment check results and citations are stored in separate append-only maps.
 - Evidence stores references and short digests, not fetched page bodies.
+- Each assessment also stores `web_digest`: a bounded (512 char) fingerprint
+  of the evidence the leader actually read (`id=length:prefix`, or
+  `id=UNAVAILABLE`). It makes source drift auditable. It is not a consensus
+  input and not proof of authenticity.
+- `decided_by` is derived at read time from `deterministic_fail_count` and the
+  pinned rule's interpretation mode, so no extra state can drift from the
+  recorded checks. It distinguishes a failed configured check from a model
+  interpretation.
 - The contract stores no secrets and no raw web content.
 
-Read methods use bounded pagination (1–50 items per page). The full field list is
-in [domain-model.md](domain-model.md).
+Read methods use bounded pagination (1–50 items per page).
 
 ## 8. Boundaries
 

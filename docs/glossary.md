@@ -24,6 +24,12 @@ The contract does not execute the procedure.
 **Evidence item** — A bounded reference submitted by a participant: a URL, an
 event reference, or a text statement.
 
+**Evidence fingerprint** (`web_digest`) — A bounded record of the evidence the
+leader actually read for an assessment (`evidence_id=length:prefix`, or
+`evidence_id=UNAVAILABLE`). It makes source drift and leader/validator
+divergence auditable. It is not a cryptographic hash, not proof of
+authenticity, and not part of the consensus comparison.
+
 **Intelligent Contract** — A GenLayer contract that can use non-deterministic
 operations under validator consensus.
 

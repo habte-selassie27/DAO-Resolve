@@ -126,9 +126,14 @@ Fetched page content is never stored raw.
 | `created_at` | `u64` | Production timestamp |
 | `deterministic_pass_count` | `u32` | Number of passing checks |
 | `deterministic_fail_count` | `u32` | Number of failing checks |
+| `web_digest` | `str` | Max 512 chars; fingerprint of the evidence the leader read (`id=length:prefix`, or `id=UNAVAILABLE`). Empty for deterministic assessments. Not compared in consensus |
+| `decided_by` | `str` | **Derived at read time, not stored.** `DETERMINISTIC_CHECKS` when a check failed or the pinned rule is `DETERMINISTIC_ONLY`, otherwise `INTERPRETATION`. Exposes why the verdict was reached |
 
 Full check results, cited clause ids, and cited evidence ids are stored in
 separate append-only maps keyed by assessment id.
+
+`decided_by` is computed from the pinned rule interpretation and
+`deterministic_fail_count`, so it can never disagree with the stored checks.
 
 ## ChallengeRecord
 

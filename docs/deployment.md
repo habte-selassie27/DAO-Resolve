@@ -6,19 +6,20 @@ DAOResolve is deployed on **StudioNet**:
 
 | Item | Value |
 |---|---|
-| Contract | `contracts/dao_resolve.py` |
-| Address | `0x48179D48495B7199a3FCb939c3f0F73a23c50b70` |
-| Deploy transaction | `0x4889cd93bf8ce27b2107c11e474bfea3e06e44fa2f0d6d4ff8fd241a592c84ab` |
-| Explorer | https://explorer-studio.genlayer.com/address/0x48179D48495B7199a3FCb939c3f0F73a23c50b70 |
+| Contract | `contracts/dao_resolve.py` (1,397 lines at deploy time; working tree is 1,463) |
+| Address | `0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA` |
+| Deploy transaction | `0x3157b6a8137b74a162afcfbb288da91bd635062e0d7feaac60179aa3762c9f66` |
+| Explorer | https://explorer-studio.genlayer.com/address/0xDD29Ae63f12Fbb586551251eDeb94B51aC666DfA |
 | Schema | `deployments/studionet.schema.txt` |
 
 The complete record, including write transactions and read outputs, is in
 [../deployments/studionet.md](../deployments/studionet.md).
 
 **Revision note:** that record documents the revision deployed and exercised on
-StudioNet. The current working tree contains later contract changes and has not
-been redeployed. Verify `genlayer code <address>` against the working tree before
-claiming the on-chain source is byte-identical.
+StudioNet. The working tree has since gained the readable-citation support
+floor and the derived `decided_by` field, so the on-chain source is **older**
+than `contracts/dao_resolve.py`. Redeploy before claiming the on-chain source
+matches the working tree, then verify with `genlayer code <address>`.
 
 **Bradbury:** the deployment attempt was rejected by the node with
 `gas limit too high` before confirmation. No funds were spent. This optional

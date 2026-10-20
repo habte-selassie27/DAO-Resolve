@@ -31,6 +31,7 @@ where applicable.
 | Cited ids per assessment | 16 | Must be a subset of provided ids |
 | Evidence page characters | 3,000 | Fetched text cap |
 | Fetched URLs per evaluation | 3 | Additional URLs are marked unavailable |
+| Evidence fingerprint (`web_digest`) | 512 chars | Audit artifact; not compared in consensus |
 | Events in a prompt | 64 | First and last half when truncated |
 | Read page size | 1–50 | Pagination limit |
 

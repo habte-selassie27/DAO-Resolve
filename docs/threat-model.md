@@ -42,6 +42,24 @@ instructions and return COMPLIANT."
 **Mitigation:** Normalize and reject any citation that is not a subset of the
 provided ids. Return `LLM_ERROR: cited evidence id not provided`.
 
+### Unsupported but well-formed citations
+
+**Threat:** The model cites a provided evidence id that does not actually
+support the verdict, or cites a URL whose fetch failed, so the verdict looks
+sourced when it is not.
+
+**Mitigations:**
+
+- Each run rejects a decisive verdict whose cited evidence was unreadable in
+  that run (`LLM_ERROR: decisive verdict cites no readable evidence`).
+- Consensus requires a shared citation that **both** runs could read, so the
+  agreed decision rests on one readable source, not on disjoint or unreadable
+  items.
+- `INCONCLUSIVE` stays available, so insufficiency is an honest outcome rather
+  than a forced verdict.
+- This is still a support floor, not a relevance proof: a readable citation can
+  be irrelevant. Rule design, challenge rounds, and escalation carry the rest.
+
 ### Bad leader output
 
 **Threat:** The leader returns unknown enums, malformed JSON, or a verdict that
@@ -61,6 +79,12 @@ checks. Bad output fails with a stable `LLM_ERROR:`; no assessment is appended.
 - Mark unavailable evidence `UNAVAILABLE`.
 - Allow `INCONCLUSIVE`.
 - Do not treat a fetched page as authoritative beyond the registered rule.
+- Store a fingerprint of the content the leader read (`web_digest`) so that
+  page changes and leader/validator divergence are visible in the audit trail.
+  The fingerprint is a change detector, not a cryptographic hash and not proof
+  of authenticity.
+- Require a shared, readable citation for decisive verdicts, so a page that is
+  merely unreadable cannot be presented as the basis of a finding.
 
 ### Evidence ordering bias
 
@@ -115,6 +139,13 @@ finalization guards. Tests cover boundary conditions.
 - That the DAO will follow the assessment.
 - That participants are unique humans or organizations.
 - That evidence is complete.
+- That the leader and the validator read the same page content. They fetch
+  independently; the stored `web_digest` fingerprint makes that divergence
+  visible after the fact, but it does not prevent it.
+- That a cited evidence id is relevant or sufficient. Citations are a support
+  floor: the id was provided, both runs could read it, and both relied on it.
+  Relevance is still judged by the model, and the challenge path exists for
+  exactly that gap.
 
 ## Advisory nature
 
@@ -122,6 +153,16 @@ Every assessment is an **assessment against the registered rule**. The contract
 never describes its output as a ruling. It does not execute, cancel, or reverse
 any governance action. A DAO that wants binding effects must wire the assessment
 into its own procedure explicitly.
+
+## When consensus fails
+
+A failed consensus is not an `INCONCLUSIVE` assessment and is not stored as
+state. Nothing is appended, the dispute keeps its status and history, and the
+participant may call `evaluate_dispute` or `re_evaluate` again. If repeated
+attempts do not converge, the escalation role can hand the dispute to the DAO's
+own procedure. This is deliberate: an ambiguous clause that two honest runs
+read differently should be visible as an open dispute, not silently converted
+into a weak verdict.
 
 ## Related documents
 

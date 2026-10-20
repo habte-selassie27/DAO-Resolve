@@ -355,3 +355,116 @@ def test_challenge_accepts_native_evidence_array(dao, alice, bob, direct_vm):
     evidence = dao.get_evidence("D1", 0, 10)
     assert len(evidence) == 1
     assert evidence[0]["side"] == "RESPONDENT"
+
+
+def test_challenge_without_reason_or_evidence_rejected(dao, alice, bob, direct_vm):
+    seed_evaluated(dao, alice, bob, direct_vm)
+    direct_vm.sender = bob
+    with pytest.raises(Exception, match="EXPECTED: empty challenge reason"):
+        challenge(dao, direct_vm, reason="", evidence=[])
+    assert dao.get_dispute_status("D1") == "EVALUATED"
+    assert dao.get_dispute("D1")["challenge_count"] == 0
+
+
+def test_irrelevant_challenge_evidence_keeps_a_deterministic_verdict(
+    dao, alice, bob, direct_vm
+):
+    seed_evaluated(dao, alice, bob, direct_vm)
+    direct_vm.sender = bob
+    challenge(
+        dao,
+        direct_vm,
+        reason="Adding context that has no bearing on the check.",
+        evidence=[
+            {
+                "side": "DISPUTANT",
+                "kind": "TEXT_STATEMENT",
+                "ref": "The weather was pleasant during the voting.",
+            }
+        ],
+    )
+    assert dao.get_dispute_status("D1") == "CHALLENGED"
+    dao.re_evaluate("D1")
+    history = dao.get_assessment_history("D1", 0, 10)
+    assert [assessment["verdict"] for assessment in history] == ["COMPLIANT", "COMPLIANT"]
+    assert len(direct_vm._llm_mocks_hit) == 0
+
+
+def test_contradictory_challenge_evidence_can_end_inconclusive(
+    dao, alice, bob, direct_vm
+):
+    add_interpretive_rule(dao)
+    add_proposal(dao)
+    add_review_events(dao, alice)
+    add_open_dispute(dao, rule_id="R2", dispute_id="D2")
+    dao.submit_evidence("D2", "RESPONDENT", "TEXT_STATEMENT", "Adequate discussion.")
+    mock_llm(direct_vm, LLM_COMPLIANT)
+    direct_vm.sender = bob
+    dao.evaluate_dispute("D2")
+    assert dao.get_assessment_history("D2", 0, 10)[0]["verdict"] == "COMPLIANT"
+
+    dao.challenge_assessment(
+        "D2",
+        "The cited discussion thread was bot activity, not real deliberation.",
+        json.dumps(
+            [
+                {
+                    "side": "DISPUTANT",
+                    "kind": "TEXT_STATEMENT",
+                    "ref": "No substantive comments were ever posted.",
+                }
+            ]
+        ),
+    )
+    direct_vm.clear_mocks()
+    mock_llm(
+        direct_vm,
+        {
+            "verdict": "INCONCLUSIVE",
+            "confidence_band": "LOW",
+            "cited_clause_ids": ["R2"],
+            "cited_evidence_ids": [],
+            "reasoning_digest": "The evidence items directly contradict each other.",
+        },
+    )
+    dao.re_evaluate("D2")
+    history = dao.get_assessment_history("D2", 0, 10)
+    assert len(history) == 2
+    assert history[0]["verdict"] == "COMPLIANT"
+    assert history[1]["verdict"] == "INCONCLUSIVE"
+    assert history[1]["round"] == 1
+    assert history[1]["produced_by"] == "RE_EVALUATION"
+
+
+def test_persuasive_challenge_correction_can_flip_the_verdict(
+    dao, alice, bob, direct_vm
+):
+    add_interpretive_rule(dao)
+    add_proposal(dao)
+    add_review_events(dao, alice)
+    add_open_dispute(dao, rule_id="R2", dispute_id="D2")
+    dao.submit_evidence("D2", "RESPONDENT", "TEXT_STATEMENT", "Adequate discussion.")
+    mock_llm(direct_vm, LLM_COMPLIANT)
+    direct_vm.sender = bob
+    dao.evaluate_dispute("D2")
+
+    dao.challenge_assessment(
+        "D2",
+        "The initial assessment relied on an outdated page snapshot.",
+        json.dumps(
+            [
+                {
+                    "side": "DISPUTANT",
+                    "kind": "TEXT_STATEMENT",
+                    "ref": "The thread cited contains only two comments over nine days.",
+                }
+            ]
+        ),
+    )
+    direct_vm.clear_mocks()
+    mock_llm(direct_vm, dict(LLM_COMPLIANT, verdict="VIOLATION"))
+    dao.re_evaluate("D2")
+    history = dao.get_assessment_history("D2", 0, 10)
+    assert history[0]["verdict"] == "COMPLIANT"
+    assert history[1]["verdict"] == "VIOLATION"
+    assert history[1]["cited_evidence_ids"] == ["D2#e1"]

@@ -36,12 +36,16 @@ consensus layer exists to answer.
 
 **Evidence:** The proposal document URL.
 
-**Expected:** Evidence extraction produces the fact `recipient_disclosed`.
-Validators must agree on the boolean. If the page is unreachable, evidence is
-marked `UNAVAILABLE` and the verdict may be `INCONCLUSIVE`.
+**Expected:** The bounded page is fetched and shown to the model as data, and
+the model returns a constrained verdict with cited evidence ids. Leader and
+validator must cite at least one common evidence id. If the page is
+unreachable, the evidence is marked `UNAVAILABLE` and the verdict may be
+`INCONCLUSIVE`. The assessment also stores a fingerprint of the page content
+the leader read (`web_digest`), so later readers can see what the decision was
+based on.
 
 **Why:** A web page is the right source, but validators must independently fetch
-and extract the same bounded fact rather than compare page text.
+and reason over the same bounded content rather than compare page text.
 
 ## Scenario 4 — Conflicting two-sided evidence
 
@@ -92,14 +96,80 @@ deprecation remain readable and pinned to their original version.
 **Input:** The DAO config marks a rule category as requiring its own vote. A
 participant calls `finalize_dispute` after the window.
 
-**Expected:** `EXPECTED: dispute requires escalation`. The escalation role can
-record a handoff. The contract does not execute the vote.
+**Expected:** `EXPECTED: category requires escalation to the DAO procedure`. The
+escalation role can record a handoff. The contract does not execute the vote.
 
 **Why:** The primitive must respect the DAO's existing procedure.
 
+## Reuse: two sample DAOs
+
+DAOResolve is rule-agnostic. These two sample DAOs differ in category,
+deterministic checks, and escalation policy; neither needs a contract change.
+
+### Sample DAO A — Grants Council (a grants program)
+
+**Rule G1 (QUORUM, `DETERMINISTIC_ONLY`)** — "A grant requires at least 3
+council approvals before the payout is released."
+
+**Structured check:** `MIN_COUNT` on `APPROVAL`, threshold 3.
+
+**Rule G2 (PROCESS, `NEEDS_INTERPRETATION`)** — "Grant decisions must receive
+adequate community discussion before the council votes."
+
+**Dispute GD1** on proposal `GP1` (a 12,000 grant for a protocol audit):
+
+| Input | Value |
+|---|---|
+| Recorded events | `APPROVAL` x2, `COUNCIL_VOTE` |
+| Evidence | `GP1` forum thread URL (disputant), a threaded reply with three steward questions (respondent) |
+| Deterministic result | `MIN_COUNT` `FAIL` (`count=2 threshold=3`) |
+| Expected assessment | `VIOLATION`, band `HIGH`, no model call, reasoning "A configured structured check failed; this assessment is against the registered rule version only." |
+| Challenge | The respondent disputes the count, but the count is read from recorded events, so a challenge cannot flip it. Re-evaluation returns `VIOLATION` again; history shows two assessments, round 1 |
+| Escalation | The Grants Council marks `QUORUM` as vote-required, so `finalize_dispute` returns `EXPECTED: category requires escalation to the DAO procedure` and the escalator records the handoff |
+
+**Why it matters here:** the numeric part is decided in code. The ambiguous
+"adequate discussion" rule (G2) is a separate dispute, so a deterministic
+failure in one rule never bleeds into another.
+
+### Sample DAO B — Treasury Payments (a payment workflow)
+
+**Rule T1 (TIMING, `DETERMINISTIC_ONLY`)** — "Payments require a review period
+of at least 100 seconds before execution."
+
+**Structured check:** `MIN_ELAPSED` from `SUBMITTED` to `PAYMENT_EXECUTED`,
+threshold 100.
+
+**Rule T2 (DISCLOSURE, `NEEDS_INTERPRETATION`)** — "Payments to external
+addresses must disclose the recipient address in the proposal."
+
+**Dispute TD1** on proposal `TP1` (a 5,000 grant to a multisig):
+
+| Input | Value |
+|---|---|
+| Recorded events | `SUBMITTED` at t, `PAYMENT_EXECUTED` at t+40 |
+| Evidence | proposal document URL (recipient block present) |
+| Deterministic result | `MIN_ELAPSED` `FAIL` (`elapsed=40 threshold=100`) |
+| Expected assessment | `VIOLATION`, band `HIGH`, no model call |
+| Challenge | The treasury argues the payment was urgent. The challenger adds the emergency-approval record as new evidence. Re-evaluation is still deterministic: `VIOLATION`, and the history shows both assessments |
+| Second dispute TD2 | A different payment, `SUBMITTED` at t and `PAYMENT_EXECUTED` at t+140: `MIN_ELAPSED` `PASS`, so T1 is satisfied. T2 is then interpreted: the model returns `COMPLIANT` citing the disclosure document, leader and validator share the cited evidence id, and the assessment records a `web_digest` of the page the leader read |
+
+**Why it matters here:** the same contract instance serves a timing rule and a
+disclosure rule with different check kinds, and the same DAO's own appeal
+process stays in charge of what happens after the assessment.
+
+### Reuse checklist for a new DAO
+
+1. Register the rules the DAO actually publishes, one category per rule.
+2. Attach deterministic checks wherever the clause is numeric or event-shaped.
+3. Leave genuinely ambiguous clauses as `NEEDS_INTERPRETATION`.
+4. Point the recorder role at a trusted source of process events.
+5. Mark categories that must go to the DAO's own vote with
+   `set_category_vote_required`, so finalization is refused and escalation is
+   the path.
+6. Decide the challenge window and round cap with `set_config`.
+
 ## Related documents
 
-- [state-machine.md](state-machine.md)
+- [design.md](design.md)
 - [equivalence.md](equivalence.md)
-- [testing.md](testing.md)
 - [threat-model.md](threat-model.md)
