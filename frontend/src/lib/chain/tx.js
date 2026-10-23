@@ -101,7 +101,7 @@ export async function runTransaction({
     if (status === TransactionStatus.ACCEPTED || status === TransactionStatus.READY_TO_FINALIZE) {
       if (!accepted) {
         accepted = true;
-        patch(id, { stage: "accepted" });
+        patch(id, { stage: "accepted", detail: "" });
         if (onAccepted) onAccepted(receipt);
       }
       continue;
@@ -112,12 +112,13 @@ export async function runTransaction({
         const explained = explainError(failure);
         patch(id, {
           stage: "reverted",
+          detail: "",
           error: explained.message,
           errorDetail: failure || "The contract rejected the transaction.",
         });
         return { ok: false, hash, error: failure };
       }
-      patch(id, { stage: "finalized" });
+      patch(id, { stage: "finalized", detail: "" });
       clearReadCache();
       if (onFinalized) onFinalized(receipt);
       return { ok: true, hash, receipt };
@@ -125,6 +126,7 @@ export async function runTransaction({
     if (FAILED.has(status)) {
       patch(id, {
         stage: "failed",
+        detail: "",
         error: "Validators could not reach agreement. Nothing changed. You can try again.",
         errorDetail: `Status: ${status}`,
       });

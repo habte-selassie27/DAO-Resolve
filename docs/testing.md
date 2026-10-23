@@ -6,13 +6,15 @@
 |---|---|
 | `genvm-lint` | Clean; 3 checks passed, 28 methods. One informational notice about a newer runner |
 | Direct tests | **171 passed** |
-| Integration tests | **3 passed in 209.44s on StudioNet** for the current source, and 3 passed in 270.07s for the earlier deployed revision; see `deployments/studionet.md` |
+| Integration tests | **3 passed in 261.76s on StudioNet** on 2026-10-23 (contract source unchanged); earlier runs passed in 209.44s and 270.07s; see `deployments/studionet.md` |
 | Recorder typecheck | Clean |
 | Recorder tests | **8 passed** |
 | Frontend lint | Clean |
 | Frontend unit tests | **14 passed** |
 | Frontend e2e (mock) | **10 passed**, 4 real-mode tests skipped |
 | Frontend e2e (real reads) | **4 passed** against StudioNet |
+| Hosted frontend (real reads) | Overview metrics `2 / 3 / 4`, 7 rows; D1, D4, ENS-7.1; no console errors |
+| Browser-wallet write | **1 tx FINALIZED** in Chromium with an injected EIP-1193 provider |
 | Frontend build | Passes |
 
 Commands used:
@@ -106,6 +108,18 @@ npm run test:e2e:real
 The real suite handles StudioNet's 30-requests-per-minute limit by waiting and retrying,
 and it asserts the live overview, `D1` (deterministic), `D4` (consensus), and `ENS-7.1`
 (recorder events).
+
+The hosted app at <https://daoresolve.vercel.app> was exercised with Chromium against the
+same live contract. It loaded the overview (metrics `2 / 3 / 4`, 7 rows, no alerts), `D1`
+(`RE_EVALUATED`, `Rule check`), `D4` (`Finalized record`), and `ENS-7.1` (recorder events),
+with no page or console errors. Vercel serves the SPA and proxies `/api` to StudioNet; the
+exact `/api` rewrite avoids the trailing-slash redirect.
+
+A separate browser-write smoke used Chromium with an injected EIP-1193 provider backed by
+the local unlocked owner account. It registered `E2E-BROWSER-2` on the fresh StudioNet
+deployment, watched the UI reach `FINALIZED`, and read the proposal back. The transaction is
+`0x23cc5d6ea3d358bdbb5389353c9efd98bccbab987dc7520d77452ee361e6e2e4`. This is not a
+MetaMask extension test; the extension UX is still unverified.
 
 ## Integration tests
 

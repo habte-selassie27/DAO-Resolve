@@ -49,5 +49,8 @@ test("transaction lifecycle reaches finalized in mock mode", async ({ page }) =>
   await page.goto("/disputes/D5");
   await page.getByRole("button", { name: "Request assessment" }).first().click();
   await expect(page.getByText("Evaluate D5")).toBeVisible();
-  await expect(page.getByText("Finalized", { exact: true }).first()).toBeVisible({ timeout: 15000 });
+  const tray = page.locator(".tx-tray");
+  await expect(tray.getByText("Finalized", { exact: true }).first()).toBeVisible({ timeout: 15000 });
+  await expect(tray).not.toContainText("PENDING");
+  await expect(tray).not.toContainText("COMMITTING");
 });

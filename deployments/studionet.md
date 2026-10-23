@@ -230,8 +230,18 @@ gltest tests/integration/ -v -s --network studionet   # exercises the same sourc
 
 `gltest tests/integration/ -v -s --network studionet` -> **3 passed in
 209.44s** on 2026-10-20, after the readable-citation support floor and the
-`decided_by` field. These are throwaway test deployments, not the official
-address above.
+`decided_by` field. A second full run on 2026-10-23, after the frontend and
+hosting work and with the contract source unchanged, passed **3 tests in
+261.76s**. These are throwaway test deployments, not the official address
+above.
+
+2026-10-23 rerun:
+
+| Test | Contract address |
+|---|---|
+| Consensus + challenge round trip | `0x36a8364e5908aB59Fd3b228e47debca67B35B67F` |
+| Deterministic end-to-end | `0x257cb6E8c4c4B76F1654f48216922fCE5C946833` |
+| Invalid transition | `0xCc6a57397718A11916C9E36Cd30AC34E82C5482D` |
 
 | Test | Contract address |
 |---|---|
@@ -501,9 +511,58 @@ Captured pages (real reads, no wallet, no mock):
 [docs/screenshots/dispute-D4-real.png](../docs/screenshots/dispute-D4-real.png),
 [docs/screenshots/proposal-ENS-7.1-real.png](../docs/screenshots/proposal-ENS-7.1-real.png).
 
-A real browser-wallet write was not run: no browser wallet is available in this
-environment. Mock-mode e2e covers the lifecycle UI; the recorder covers real signed writes.
-The frontend is not hosted; `frontend/server.js` is the deployable server.
+### Browser-wallet write smoke
+
+A real write was exercised in Chromium against the fresh deployment
+`0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e`. The page injected a temporary EIP-1193
+provider that signed locally with the unlocked owner account; no key was placed in the
+frontend, the repository, or the screenshot. This exercises the same
+`genlayer-js` `account: address` + `provider` path the UI uses, but it is not a MetaMask
+extension test.
+
+| Item | Value |
+|---|---|
+| Method | `register_proposal` |
+| Arguments | `E2E-BROWSER-2`, `https://forum.example.org/t/e2e-browser-write-2`, `Browser-wallet smoke write, second run` |
+| Caller | `0x5B3661C576c7001e6d6279C67F3779705d334c89` |
+| Transaction | `0x23cc5d6ea3d358bdbb5389353c9efd98bccbab987dc7520d77452ee361e6e2e4` |
+| Status | `FINALIZED`; receipt status `7`; all five validator votes `agree` |
+| Read-back | `get_proposal E2E-BROWSER-2` returned the same content and `created_by` |
+
+The UI showed `Waiting for wallet → Submitted → Consensus → Accepted → Finalized` and the
+contract read the proposal after the write. The run also exposed and fixed a UI defect: the
+transaction tray kept the previous consensus status next to `Finalized`. The regression is
+covered by the mock e2e assertion that the tray does not contain `PENDING` or `COMMITTING`
+after finalization.
+
+Screenshot: [docs/screenshots/browser-write-real.png](../docs/screenshots/browser-write-real.png).
+
+### Hosted frontend
+
+The frontend is live at <https://daoresolve.vercel.app>. It is a Vercel static production
+build of `frontend/dist`; `frontend/vercel.json` serves the SPA and proxies `/api` to
+StudioNet. The proxy is truly same-origin: the exact `/api` rewrite returns `200`, not
+Studio's trailing-slash redirect. `/api` responses are marked `no-store` to avoid cached
+JSON-RPC results.
+
+| Item | Value |
+|---|---|
+| Live URL | <https://daoresolve.vercel.app> |
+| Vercel project | `daoresolve` under `habteselassies-projects` |
+| Production deployment | `dpl_3Diz8bYmaA9Cku5vEGdbXv5cjSom` |
+| Build | `npm run build` (Vite) |
+| Proxy check | `POST /api` with `eth_chainId` -> `200`, `{"jsonrpc":"2.0","result":"0xf22f","id":1}` |
+| Contract read | Hosted `/api` returned `owner`, `challenge_window`, and `recorder` from the demo contract |
+| Browser check | Overview metrics `2 / 3 / 4`, 7 rows, no alerts; `D1` (`RE_EVALUATED`, `Rule check`), `D4` (`Finalized record`), and `ENS-7.1` (recorder events) all read successfully |
+| Console | No page or console errors during the hosted run |
+
+Screenshots: [docs/screenshots/vercel-overview-real.png](../docs/screenshots/vercel-overview-real.png)
+and [docs/screenshots/vercel-dispute-D1-real.png](../docs/screenshots/vercel-dispute-D1-real.png).
+
+The browser-write screenshot was taken from the Vite dev server pointed at the fresh
+deployment. Preview Vercel deployments are protected by Vercel Authentication; the
+production alias above is public. `frontend/server.js` remains the self-hosted equivalent
+for a Node host.
 
 ### Schema
 

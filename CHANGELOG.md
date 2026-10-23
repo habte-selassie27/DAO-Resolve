@@ -2,6 +2,76 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-23 (hosted frontend on Vercel)
+
+DONE:
+- Added `frontend/vercel.json`: same-origin `/api` rewrite to StudioNet, SPA fallback,
+  and `no-store` headers for JSON-RPC responses.
+- Deployed the production frontend to <https://daoresolve.vercel.app>.
+- Verified the hosted app with Playwright against the live contract: overview metrics
+  `2 / 3 / 4`, 7 rows, no alerts; `D1`, `D4`, and `ENS-7.1` all render; no page or
+  console errors.
+- Confirmed the hosted `/api` endpoint returns `200` with a real `get_config` read and
+  does not rely on Studio's cross-origin redirect.
+- Updated the README, submission notes, deployment record, API ledger, screenshots,
+  testing notes, and frontend README with the live URL.
+
+PROOF:
+- Live URL: <https://daoresolve.vercel.app>
+- Vercel deployment: `dpl_3Diz8bYmaA9Cku5vEGdbXv5cjSom`
+- Proxy check: `POST /api` -> `200`, `{"jsonrpc":"2.0","result":"0xf22f","id":1}`
+- Screenshots: `docs/screenshots/vercel-overview-real.png`,
+  `docs/screenshots/vercel-dispute-D1-real.png`.
+- `gltest tests/integration/ -v -s --network studionet` -> **3 passed in
+  261.76s** on 2026-10-23, with the contract source unchanged.
+
+NEXT: Exercise the MetaMask extension UX, record the demo video, prepare public post
+drafts, and run the M11 pre-submit review passes.
+
+BLOCKED:
+- MetaMask extension: not installed in this environment; the injected EIP-1193 provider
+  covers the genlayer-js wallet path but not the extension UI.
+- Bradbury: no funded account; the faucet is browser-based.
+- Demo video and public posts: user-owned publishing steps.
+
+## 2026-10-23 (browser-wallet smoke and transaction tray fix)
+
+DONE:
+- Exercised the real browser write path in Chromium with a temporary injected
+  EIP-1193 provider backed by the unlocked owner account. No key was added to
+  the frontend, repository, or screenshots.
+- Registered `E2E-BROWSER-2` on the fresh StudioNet deployment
+  `0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e`; the UI reached `FINALIZED` and
+  the contract read the proposal back.
+- Fixed the transaction tray so the previous consensus status (`PENDING` /
+  `COMMITTING`) is cleared when a transaction becomes accepted or finalized.
+- Added a mock e2e regression assertion for the stale-status bug.
+- Documented the write receipt, the injected-provider scope, and the remaining
+  MetaMask-extension gap.
+
+PROOF:
+- Browser write tx:
+  `0x23cc5d6ea3d358bb5389353c9efd98bccbab987dc7520d77452ee361e6e2e4`,
+  `FINALIZED`, five `agree` votes, no page errors.
+- `get_proposal E2E-BROWSER-2` returned the expected content and
+  `created_by = 0x5B3661C576c7001e6d6279C67F3779705d334c89`.
+- `cd frontend && npm run lint` -> clean.
+- `cd frontend && npm test` -> **14 passed**.
+- `cd frontend && npx playwright test` -> **10 passed**, 4 real-mode tests skipped.
+- `cd frontend && npm run build` -> passes.
+- Screenshot: `docs/screenshots/browser-write-real.png`.
+
+NEXT: Host the frontend with a same-origin `/api` proxy, exercise the MetaMask
+extension UX, record the demo video, and update `SUBMISSION.md` with the live
+URL.
+
+BLOCKED:
+- MetaMask extension UX: the provider path is verified, but no extension is
+  installed in this environment.
+- Public hosting has no URL yet.
+- Bradbury still has no funded account; the faucet is browser-based.
+- Demo video and public posts are user-owned publishing steps.
+
 ## 2026-10-23 (full project pass: frontend, recorder, docs, fresh deploy)
 
 DONE:

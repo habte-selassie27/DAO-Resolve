@@ -56,6 +56,10 @@ clearly labelled and never touches the network.
 - The frontend reads the deployed contract through a same-origin proxy. The opt-in
   real-mode Playwright suite passes 4/4 against StudioNet (overview totals, the D1
   deterministic path, the D4 consensus path, and the ENS-7.1 recorder events).
+- The browser write path was exercised in Chromium with an injected EIP-1193 test
+  provider. The owner address signed `register_proposal`; the UI showed submitted,
+  consensus, and finalized states, and the contract returned the new proposal. The
+  MetaMask extension UX itself is still untested.
 - Contract lint is clean, 171 direct tests pass, 3 integration tests passed under real
   consensus, recorder typecheck and 8 recorder tests pass, frontend lint and 14 unit tests
   pass, and 10 mock-mode e2e tests pass.
@@ -73,11 +77,14 @@ clearly labelled and never touches the network.
 ## Links
 
 - Repository: <https://github.com/habte-selassie27/DAO-Resolve>
-- Live demo frontend: **not hosted in this environment.** The deployable server is
-  `frontend/server.js`; it serves `dist/` and proxies `/api` to StudioNet.
+- Live demo frontend: <https://daoresolve.vercel.app>
+- Hosting: Vercel static build with a same-origin `/api` rewrite to StudioNet
+  (`frontend/vercel.json`). `frontend/server.js` remains the self-hosted equivalent.
 - Demo contract: [`0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`](https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb)
 - Deploy transaction: [`0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f`](https://explorer-studio.genlayer.com/tx/0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f)
 - Fresh smoke deployment (current source, pinned runner): [`0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e`](https://explorer-studio.genlayer.com/address/0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e)
+- Browser-wallet smoke write on the fresh deployment:
+  [`register_proposal`](https://explorer-studio.genlayer.com/tx/0x23cc5d6ea3d358bdbb5389353c9efd98bccbab987dc7520d77452ee361e6e2e4)
 - Recorder event transactions:
   [`submitted`](https://explorer-studio.genlayer.com/tx/0x9e3173c0114ebef2196d0bf29ffd796c1b361d21f12a31bc13e395698b72c511),
   [`voting-started`](https://explorer-studio.genlayer.com/tx/0x87dcb6daa4921d384b8a84633b09cfcd2d61629177608ecd98361a04f6f31294),
@@ -95,7 +102,7 @@ python3.12 -m pytest tests/direct/ -q
 171 passed
 
 gltest tests/integration/ -v -s --network studionet
-3 passed in 209.44s
+3 passed in 261.76s
 
 npm run typecheck
 clean
@@ -115,13 +122,17 @@ cd frontend && npx playwright test
 cd frontend && npm run test:e2e:real
 4 passed
 
+# hosted app, real reads
+Playwright https://daoresolve.vercel.app
+overview 2 / 3 / 4, 7 rows; D1, D4, ENS-7.1; no console errors
+
 CONTRACT_ADDRESS=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb npm run verify
 18/18 configured views passed
 ```
 
 Deployment records, receipts, and the schema are in `deployments/` and
 `frontend/src/config/schema/`. Real-mode screenshots are in `docs/screenshots/`
-(overview, D1, D4, ENS-7.1).
+(overview, D1, D4, ENS-7.1, the browser-write smoke, and the hosted app).
 
 ## Limitations and roadmap
 
@@ -136,8 +147,9 @@ Limitations, stated rather than hidden:
 - The contract has no `list_proposals` view; the frontend reads configured ids and says so.
 - The demo uses one owner account for all roles; the UI shows this.
 - Studio RPC requires a same-origin proxy for browser reads; the repo ships one.
-- Browser-wallet signing and Bradbury deployment were not exercised here. No funded
-  Bradbury account was available and the faucet is browser-based.
+- The genlayer-js wallet path was exercised with an injected EIP-1193 provider; the
+  MetaMask extension UX was not. Bradbury deployment was not exercised: no funded account
+  was available and the faucet is browser-based.
 
 Roadmap:
 
@@ -150,7 +162,8 @@ Roadmap:
 
 ## Pre-submission status
 
-This is a complete working project, not a submission-ready marketing claim. A hosted
-frontend URL, a real browser-wallet run, a demo video, and public posts are still missing.
+This is a complete working project, not a submission-ready marketing claim. The live
+demo is hosted and verified; a MetaMask extension run, a demo video, and public posts are
+still missing.
 No submission slot should be spent until the checklist in `AGENTS.md` is fully true and the
 user has confirmed every public link.

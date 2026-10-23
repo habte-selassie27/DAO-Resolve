@@ -24,7 +24,26 @@ npm start
 
 `npm start` serves `dist/` and the same `/api` proxy on port `4173` (override with `PORT`).
 A static-only host needs an equivalent reverse proxy; otherwise browser reads fail with a
-CORS error.
+CORS error. `vercel.json` provides that proxy for the hosted deployment.
+
+## Hosted deployment
+
+Live: <https://daoresolve.vercel.app>
+
+```bash
+cd frontend
+vercel deploy --prod
+```
+
+`vercel.json` does three things:
+
+- rewrites exact `/api` to `https://studio.genlayer.com/api` (the exact rule avoids a
+  trailing-slash redirect);
+- rewrites other non-asset paths to `/index.html` for the Vue router;
+- sets `no-store` headers on `/api` so JSON-RPC responses are not cached.
+
+No secret is needed to build or host the frontend. Never add a private key to Vercel
+environment variables or any `VITE_*` value.
 
 ## Configuration
 
@@ -63,6 +82,7 @@ src/screens/         overview, rules, proposals, disputes, admin, how it works
 tests/unit/          Vitest component and formatting tests
 tests/e2e/           Playwright mock-mode flows
 server.js            static server + /api proxy for production-style hosting
+vercel.json          hosted same-origin /api rewrite + SPA fallback
 ```
 
 Components never import `genlayer-js`; all chain access is in `src/lib/chain/`.

@@ -5,6 +5,8 @@ actually happened, and let code checks and GenLayer validator consensus assess w
 a proposal followed the rule version it pinned. Every assessment is public, append-only,
 challengeable, and clearly labelled as advisory.
 
+Live demo: <https://daoresolve.vercel.app>
+
 Live contract on StudioNet:
 [`0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`](https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb)
 
@@ -177,6 +179,8 @@ on StudioNet; the three transaction hashes are in the deployment record.
 
 ### 3. Frontend
 
+The hosted demo is <https://daoresolve.vercel.app>. To run it locally:
+
 ```bash
 cd frontend
 npm install
@@ -232,8 +236,11 @@ A three-minute script with exact clicks and expected copy is in
 [docs/demo-script.md](docs/demo-script.md). The captured real-mode pages are
 [overview](docs/screenshots/overview-real.png),
 [D1](docs/screenshots/dispute-D1-real.png),
-[D4](docs/screenshots/dispute-D4-real.png), and
-[ENS-7.1](docs/screenshots/proposal-ENS-7.1-real.png).
+[D4](docs/screenshots/dispute-D4-real.png),
+[ENS-7.1](docs/screenshots/proposal-ENS-7.1-real.png), the
+[browser-write smoke](docs/screenshots/browser-write-real.png), and the hosted
+[overview](docs/screenshots/vercel-overview-real.png) and
+[D1](docs/screenshots/vercel-dispute-D1-real.png).
 
 ## Testing
 
@@ -243,13 +250,15 @@ Real, current results:
 |---|---|---|
 | Contract lint | `genvm-lint check contracts/dao_resolve.py --json` | clean, 3 checks passed; 28 methods |
 | Direct contract tests | `python3.12 -m pytest tests/direct/ -q` | **171 passed** |
-| Integration tests | `gltest tests/integration/ -v -s --network studionet` | **3 passed in 209.44s** (2026-10-20) |
+| Integration tests | `gltest tests/integration/ -v -s --network studionet` | **3 passed in 261.76s** (2026-10-23; contract source unchanged) |
 | Recorder typecheck | `npm run typecheck` | clean |
 | Recorder tests | `npm run recorder:test` | **8 passed** |
 | Frontend lint | `cd frontend && npm run lint` | clean |
 | Frontend unit tests | `cd frontend && npm test` | **14 passed** |
 | Frontend e2e (mock) | `cd frontend && npx playwright test` | **10 passed**, 4 real-mode tests skipped |
 | Frontend e2e (real reads) | `cd frontend && npm run test:e2e:real` | **4 passed** against StudioNet |
+| Hosted frontend (real reads) | Playwright against `https://daoresolve.vercel.app` | overview `2 / 3 / 4`, 7 rows; D1, D4, ENS-7.1; no console errors |
+| Browser-wallet write | manual injected EIP-1193 provider | **1 tx FINALIZED** on the fresh deployment; proposal read back |
 | Frontend production build | `cd frontend && npm run build` | passes |
 | Deployment views | `CONTRACT_ADDRESS=… npm run verify` | 18/18 views passed on the demo address |
 
@@ -267,9 +276,12 @@ CI installs the matching browser instead.
 
 | Item | Value |
 |---|---|
+| Live frontend | <https://daoresolve.vercel.app> |
+| Hosting | Vercel static build plus a same-origin `/api` rewrite to StudioNet |
 | Network | StudioNet (gasless), chain id `61999` |
 | Demo contract | `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` |
 | Fresh smoke deployment | `0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e` |
+| Browser-wallet smoke write | `0x23cc5d6ea3d358bdbb5389353c9efd98bccbab987dc7520d77452ee361e6e2e4` (`FINALIZED`) |
 | Schema | `frontend/src/config/schema/dao_resolve.json`, `deployments/studionet.schema.json` |
 | Full records | [deployments/studionet.md](deployments/studionet.md) |
 

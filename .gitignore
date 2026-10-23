@@ -52,3 +52,6 @@ Thumbs.db
 
 # GenLayer local state
 .genlayer/
+
+# Vercel CLI local project link
+.vercel/

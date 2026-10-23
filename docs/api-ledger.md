@@ -28,21 +28,22 @@ Environment on 2026-10-23:
 | Item | Status | Evidence |
 |---|---|---|
 | `createClient({ chain, endpoint })` for reads | VERIFIED | `frontend/src/lib/chain/clients.js`; real reads in the opt-in e2e suite |
-| `createClient({ chain, endpoint, account: address, provider })` for wallet writes | PARTIAL | Types and provider path inspected; no browser wallet in this environment. The recorder exercises real signed writes with a private-key account instead. |
+| `createClient({ chain, endpoint, account: address, provider })` for wallet writes | VERIFIED with an injected EIP-1193 provider | Browser smoke write on the fresh StudioNet deployment: `register_proposal` finalized at `0x23cc5d6e…`. The provider signed locally; the MetaMask extension UX itself remains untested. |
 | Chains exported: `localnet`, `studionet`, `testnetAsimov`, `testnetBradbury` | VERIFIED | `import('genlayer-js/chains')` printed those keys |
 | `createAccount(privateKey)` | VERIFIED | Recorder `submit` signed three real StudioNet transactions |
 | `client.readContract({ address, functionName, args })` | VERIFIED | Frontend real-mode reads; recorder `verify` |
 | `client.writeContract({ address, functionName, args, value: 0n })` returns a hash | VERIFIED | Recorder submit hashes below |
 | `client.waitForTransactionReceipt({ hash, status, retries, interval })` | VERIFIED | Recorder waits for `TransactionStatus.FINALIZED`; frontend polls accepted → finalized |
+| `client.getTransaction({ hash })` from the browser write client | VERIFIED | The browser-signed `register_proposal` transaction reached `FINALIZED` in the UI tray; receipt status `7`, all five validator votes `agree` |
 | `TransactionStatus` has `ACCEPTED` and `FINALIZED` | VERIFIED | `frontend/src/lib/chain/tx.js`; recorder `chain.ts`; real receipts |
 | Receipt errors appear under `consensus_data.leader_receipt[].error` | VERIFIED | Frontend error extraction and recorder `receiptError`; transaction states observed on failed writes |
 | Map return values need normalization | VERIFIED | `normalize()` in reads; real reads of nested config/dispute objects render correctly |
 | Browser direct access to `https://studio.genlayer.com/api` is blocked by CORS | VERIFIED | Playwright console: `No 'Access-Control-Allow-Origin' header`; fixed with `/api` same-origin proxy |
 | StudioNet rate limit is 30 requests per minute | VERIFIED | Rapid real-mode navigation returned `Rate limit exceeded: 30 requests per minute`; reads are cached and retried, UI maps the error |
 | StudioNet endpoint is `https://studio.genlayer.com/api`, chain id `61999` | VERIFIED | Existing deployment record and `genlayer network` config |
-| Browser wallet signing with MetaMask | NOT VERIFIED in this environment | No browser wallet available; code follows the provider pattern and fails with a plain message when absent. This is the main unverified integration surface. |
+| Browser wallet signing | VERIFIED with an injected EIP-1193 provider; MetaMask extension untested | The owner address signed a real `register_proposal` in Chromium, the UI reached `FINALIZED`, and the contract returned the new proposal. No key is in the frontend or repo. |
 | Bradbury write path | NOT VERIFIED | Account has `0 GEN`; faucet is browser-based. StudioNet is the demo network. |
-| `getTransaction({ hash })` | PARTIAL | Imported and used by `frontend/src/lib/chain/tx.js`; the mock lifecycle and type surface are exercised, but no real browser-wallet write ran here. Treat real write polling as unverified until a wallet run. |
+| `getTransaction({ hash })` | VERIFIED | The browser-signed write was polled through accepted → finalized; the receipt showed five `agree` votes and the proposal read back successfully. |
 
 ## Recorder
 
@@ -69,8 +70,9 @@ Live recorder transactions:
 | Vue 3 + Vite + vue-router build | VERIFIED | `npm run build`; `dist/` |
 | Mock mode uses fixtures and simulated lifecycle, never the network | VERIFIED | 10 Playwright tests with `VITE_MOCK=1` |
 | Real mode reads the deployed contract through a same-origin proxy | VERIFIED | `npm run test:e2e:real` -> 4 passed (overview, D1, D4, ENS-7.1); earlier manual run rendered metrics `2 / 3 / 4`, 7 rows, no page errors |
-| Full write lifecycle with a real wallet | NOT VERIFIED | No browser wallet in this environment. The UI code waits for accepted → finalized and never treats accepted as final. |
-| Hosted frontend URL | NOT AVAILABLE | Not deployed in this session. `frontend/server.js` is the deployable server. |
+| Full write lifecycle with a real wallet | VERIFIED with an injected EIP-1193 provider | Browser test connected the owner address, signed `register_proposal`, showed submitted → consensus → finalized, and the contract read the new proposal. The MetaMask extension UX is still untested. |
+| Hosted frontend URL | VERIFIED | <https://daoresolve.vercel.app> (Vercel project `daoresolve`, production). Playwright real reads on 2026-10-23: overview metrics `2 / 3 / 4`, 7 rows, D1, D4, ENS-7.1, no console errors. |
+| Vercel `/api` rewrite is same-origin | VERIFIED | `frontend/vercel.json`; `POST https://daoresolve.vercel.app/api` returned `200` with `{"result":"0xf22f"}` and a real `get_config` read succeeded. The exact `/api` rule avoids Studio's trailing-slash redirect. |
 
 ## Sources
 

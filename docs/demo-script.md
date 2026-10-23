@@ -6,6 +6,9 @@ disputes are opened; read the screen, do not memorize counts.
 
 ## Setup
 
+The hosted app is <https://daoresolve.vercel.app>; it reads the same StudioNet contract.
+For a local run:
+
 ```bash
 cd frontend
 npm install
