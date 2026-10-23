@@ -15,7 +15,7 @@ current source:
 | Owner | `0x5B3661C576c7001e6d6279C67F3779705d334c89` |
 | Explorer | https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb |
 | Studio import | https://studio.genlayer.com/?import-contract=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb |
-| Schema | `deployments/studionet.schema.txt` |
+| Schema | `deployments/studionet.schema.json` (28 methods; older `.txt` retained) |
 
 The complete record, including write transactions and read outputs, is in
 [../deployments/studionet.md](../deployments/studionet.md).
@@ -32,6 +32,15 @@ rule). Hashes are recorded in [../deployments/studionet.md](../deployments/studi
 The challenge window was restored to the 24-hour default afterwards; `R1` is
 deprecated by that exercise and `R2` remains active.
 
+**2026-10-23 update:** the current source was redeployed fresh to prove the pinned runner
+is accepted by StudioNet: `0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e`, deploy tx
+`0xc500a18432b27137ff002628b939d01d5287fe8ac3785ea88dbdb1dd846dd2c9`, `FINALIZED` with
+`MAJORITY_AGREE`. The demo contract's recorder role is now a separate address
+(`0x84a0cB58d217b08ed95b540b7D3ABdC5bBA3443C`), and the ENS recorder plan is on chain.
+The deployable frontend is `frontend/`; it needs a same-origin `/api` proxy to StudioNet
+(Vite dev server and `frontend/server.js` provide it). See
+[../deployments/studionet.md](../deployments/studionet.md).
+
 **Revision note:** the earlier instance `0xDD29Ae63…` runs the revision before
 the readable-citation support floor and the derived `decided_by` field. Its
 write flow is preserved in the deployment record as the receipt trail, but it
@@ -44,6 +53,7 @@ milestone is blocked pending a gas-limit or runner change. See
 
 ## Prerequisites
 
+- Node 22+ and npm for the frontend and recorder.
 - Contract implementation complete and lint-clean.
 - Direct tests green.
 - Integration tests green on the selected network.

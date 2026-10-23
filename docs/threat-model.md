@@ -170,3 +170,61 @@ into a weak verdict.
 - [access-control.md](access-control.md)
 - [equivalence.md](equivalence.md)
 - [examples.md](examples.md)
+
+## Baseline findings status (2026-10-23)
+
+The contract was not changed in this pass. Findings that require a contract change are
+documented and deferred until a failing test exists, per the change policy.
+
+| ID | Finding | Status | Evidence / next step |
+|---|---|---|---|
+| F1 | Runner/API version mismatch risk | **Resolved for StudioNet**; Bradbury unverified | Fresh deploy of the pinned runner finalized: `0xc500a184…`, address `0x1bB0D68F…`. Bradbury needs a funded account. |
+| F2 | Anyone can fill the 32-slot evidence cap; sides are self-declared | **Deferred** | UI labels every side "self-declared" and shows the cap. A per-submitter cap and side restriction need a failing direct test first. |
+| F3 | Consensus can fail on noisy citations or bands | **Monitored** | `D4` reached real consensus in 29.2s evaluate and 23.6s re-evaluate. The failure path appends nothing and the UI offers retry. Risk remains inherent. |
+| F4 | URL evidence is the first 3000 raw characters, so markup can hide text | **Deferred** | A markup-heavy fixture test must fail before changing extraction. Recorded in README limitations. |
+| F5 | A challenged dispute stays `CHALLENGED` until someone calls `re_evaluate` | **Deferred by design** | Permissionless by design; the UI exposes "Request re-evaluation" and explains the state. |
+| F6 | Process events are asserted by one recorder | **Mitigated operationally, not proven** | Recorder plans include source URLs, fetch time, raw fields, and warnings; events store `evidence_ref` and `recorded_by`. Strict separation is available but off in the demo. |
+| F7 | Caller-chosen ids allow namespace squatting | **Mitigated in UI** | The UI generates ids, validates characters, and maps "already exists". Unbounded creation remains a contract-level limit. |
+| F8 | `web_digest` is leader-asserted and not compared | **Documented** | UI labels it informational; docs never call it proof. |
+| F9 | Evidence added after an assessment is not considered until re-evaluation | **Documented in UI** | Dispute detail says a challenge/re-evaluation is needed; history is append-only. |
+| F10 | Events require chronological order and reject far-future timestamps | **Handled by recorder** | Recorder sorts, validates integer seconds, future bounds, sources, and caps before submit; contract remains the authority. |
+
+## Frontend and recorder threats
+
+### RPC proxy abuse
+
+The browser cannot call StudioNet directly because the endpoint does not send CORS
+headers. `frontend/server.js` exposes a same-origin `/api` proxy to a fixed upstream and
+serves only static files otherwise. It does not accept an arbitrary target URL, so it
+cannot be used as an open proxy. The upstream RPC is public; the proxy adds no secret.
+
+### Untrusted chain text
+
+All chain data is rendered as text through Vue interpolation. Links are accepted only for
+`http:`/`https:` and opened with `rel="noopener noreferrer"`. Evidence refs of other kinds
+are rendered as text or code, not HTML.
+
+### Rate limiting
+
+StudioNet limits requests to 30 per minute. The frontend caches reads for 15 seconds,
+invalidates the cache after a finalized write, retries once on a rate-limit error, and maps
+the error to plain language. A reviewer clicking faster than the limit sees a retry notice,
+not a stuck spinner.
+
+### Recorder secrets
+
+The recorder private key is read only from `RECORDER_PRIVATE_KEY`; it is never written to a
+plan, a log, or stdout. The plan contains only public source fields and computed events. A
+test checks the plan text for private-key material.
+
+### Mock mode confusion
+
+Mock mode is opt-in with `VITE_MOCK=1` and displays a persistent banner. E2E tests run only
+in mock mode; the real-mode read path was checked separately against the deployed
+contract. The app must not be presented as live while the banner is visible.
+
+### Stale reads after a write
+
+The frontend never applies optimistic updates. After a write finalizes it clears the read
+cache and reloads. A failed or undetermined evaluation leaves the previous assessment and
+status untouched.

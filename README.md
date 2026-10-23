@@ -1,252 +1,323 @@
 # DAOResolve
 
-A reusable GenLayer Intelligent Contract for DAO dispute adjudication.
+**Advisory dispute adjudication for DAOs.** Register a governance rule, record what
+actually happened, and let code checks and GenLayer validator consensus assess whether
+a proposal followed the rule version it pinned. Every assessment is public, append-only,
+challengeable, and clearly labelled as advisory.
 
-DAOResolve lets a DAO register its own governance rules, record proposal process
-events, and evaluate whether a proposal or governance action complied with those
-rules. Deterministic checks run first in plain code; GenLayer AI-validator
-consensus is used only for genuinely ambiguous clauses. Assessments are advisory,
-append-only, and open to challenge and escalation.
+Live contract on StudioNet:
+[`0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`](https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb)
 
-## Why GenLayer is required
+---
 
-Governance rules are written in natural language. Questions such as "did this
-proposal receive adequate community discussion?" or "was this disclosure
-sufficient?" cannot be answered by byte-exact smart-contract logic alone.
-DAOResolve needs validators to agree on the *meaning* of a verdict while
-tolerating different wording and confidence. That is the non-deterministic
-consensus problem GenLayer is designed to solve.
+## The trust problem
 
-## What DAOResolve is
+DAO rules are written in natural language. When someone asks *"did this proposal follow
+our review period?"* or *"did the community actually discuss this?"*, the answer is usually
+settled informally: by the loudest voice, the admin key, or whoever has patience for the
+longest argument.
 
-- A standalone Intelligent Contract and reusable primitive.
-- A rule registry with versioning and deprecation.
-- An append-only proposal event log supplied by authorized recorders.
-- A dispute workflow with evidence, assessments, challenges, and escalation.
-- A deterministic-first evaluator with a narrow LLM interpretation step.
-- An auditable record of assessments against a pinned rule version.
+A single LLM answer is not a fix either. It can be steered, it cannot be audited, and two
+runs can disagree without anyone knowing why.
+
+DAOResolve makes the reasoning inspectable:
+
+- the exact rule version is pinned when a dispute opens;
+- process events have timestamps, actors, and public source links;
+- timing, required events, counts, and required roles are checked in code first;
+- only genuinely ambiguous meaning goes to AI-validator consensus;
+- evidence links are fetched live by each validator;
+- challenges append new rounds instead of overwriting history;
+- every assessment says which path decided it, and whether it is final.
+
+**The output is an assessment against a registered rule version. It is not a legal ruling,
+not a penalty, and not enforcement.**
+
+## Who it is for
+
+- DAOs whose governance rules already live in prose and public forums.
+- Delegates, proposers, and community members who need a shared record of process disputes.
+- Governance tooling that wants a read-only advisory signal without handing over control.
+
+## What it is
+
+- A GenLayer Intelligent Contract for rules, proposals, process events, disputes, evidence,
+  assessments, challenges, finality, and escalation.
+- A recorder CLI that ingests public governance data and produces reproducible event plans.
+- A Vue 3 frontend that calls the deployed contract, signs with a wallet, and shows the full
+  transaction lifecycle, including failure and retry states.
+- Docs, tests, deployment records, and a seed script for a fresh deployment.
 
 ## What it is not
 
-- Not a frontend or full application.
 - Not a voting or tallying system.
-- Not a replacement for a DAO's own governance or appeal procedure.
-- Not a legal ruling or binding enforcement mechanism.
-- Not a thin LLM wrapper: code decides everything it can, and the model only
-  resolves the residual interpretive question.
-- Not a boilerplate fork or a generic "AI decides X" demo.
+- Not a treasury or fund-moving contract.
+- Not a replacement for a DAO's own vote or appeal procedure.
+- Not a binding ruling or enforcement mechanism.
+- Not a thin LLM wrapper: a failed code check forces `VIOLATION`, and a
+  `DETERMINISTIC_ONLY` rule never calls a model.
 
-## How consensus is used
+## How a verdict is made
 
-1. **Deterministic stage.** Structured checks (`MIN_ELAPSED`, `REQUIRED_EVENT`,
-   `MIN_COUNT`, `REQUIRED_ROLE`) run in plain Python against the recorded
-   events. If any fails, the verdict is `VIOLATION` and the model is never
-   called.
-2. **Interpretive stage.** For `NEEDS_INTERPRETATION` rules whose checks all
-   pass, the leader fetches bounded evidence (live URLs, text statements,
-   event references) and asks the model for a constrained JSON verdict: verdict
-   enum, confidence band, cited clause ids, cited evidence ids, and a reasoning
-   digest. The disputant's `claim_text` is included as delimited, explicitly
-   unverified context.
-3. **Validator consensus.** Each validator independently re-fetches the URLs,
-   rebuilds the prompt, and runs the model. Agreement requires an identical
-   verdict, confidence bands within one adjacent step, and shared citation
-   support: for a decisive verdict, leader and validator must cite at least one
-   common evidence id **that both runs could actually read**. A verdict citing
-   only a source that returned 503 is rejected with `LLM_ERROR: decisive
-   verdict cites no readable evidence`. `COMPLIANT` can never contradict a
-   deterministic `FAIL`, and reasoning text is excluded from the comparison.
-4. **Drift visibility.** The leader's result carries a bounded fingerprint of
-   the content it actually read (`web_digest`, e.g.
-   `D2#e1=189:The DAO foru;D2#e2=63:The author r`). It is stored on the
-   assessment for audit, not compared by validators: leader and validator fetch
-   independently, so consensus compares decisions rather than page bytes.
-5. **Safety.** Assessments are appended only after consensus. A failed
-   consensus is not an `INCONCLUSIVE` verdict: nothing is stored, the dispute
-   keeps its status and history, and the participant may retry or escalate.
-   Every assessment also reports `decided_by` (`DETERMINISTIC_CHECKS` or
-   `INTERPRETATION`), so a failed configured check is never mistaken for a
-   finding about the whole governance process.
+1. **Process record.** An authorized recorder logs events such as `SUBMITTED`,
+   `DISCUSSION_OPENED`, or `VOTING_STARTED`, each with integer UNIX seconds and an
+   `evidence_ref` to the authoritative public source.
+2. **Deterministic checks.** `MIN_ELAPSED`, `REQUIRED_EVENT`, `MIN_COUNT`, and
+   `REQUIRED_ROLE` run in plain code against the recorded events. One failed check forces
+   `VIOLATION`; the model is never called. `DETERMINISTIC_ONLY` rules stop here.
+3. **Interpretation under consensus.** For `NEEDS_INTERPRETATION` rules whose checks pass,
+   the leader and every validator independently fetch up to three evidence URLs, build the
+   same constrained prompt, and compare *meaning*: verdict, confidence band, and readable
+   citations. The reasoning prose and the leader's `web_digest` are not compared.
+4. **Challenge and finality.** An `EVALUATED` or `RE_EVALUATED` dispute can be challenged
+   inside its pinned window. A re-evaluation appends a new assessment. After the window,
+   anyone can finalize, unless the category requires escalation to the DAO's own process.
+5. **Escalation.** A vote-required category cannot be finalized. An escalator hands it to
+   the DAO and records why. Escalation does not decide anything.
 
-Full design: [docs/equivalence.md](docs/equivalence.md).
+Full split: [docs/design.md](docs/design.md) and [docs/equivalence.md](docs/equivalence.md).
 
-## Verified status
+## Honest trust statement
 
-| Item | Result |
-|---|---|
-| Contract | `contracts/dao_resolve.py` (1,463 lines) |
-| Lint | `genvm-lint` clean, 3 checks passed (one informational newer-runner notice) |
-| Direct tests | 171 passed (`python3.12 -m pytest tests/direct/ -q`) |
-| Integration tests | 3 passed in 209.44s on StudioNet for this source (test deployments; see `deployments/studionet.md`) |
-| StudioNet deployment | `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` |
-| StudioNet deploy transaction | `0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f` |
-| Deployed source check | Stored code hashes to `f0a4abc1…`: byte-identical to `contracts/dao_resolve.py` |
-| Live method exercise | All 16 write and 12 read methods executed on chain from the owner account (2026-10-20) |
-| Bradbury deployment | Blocked by a node-side "gas limit too high" rejection; no funds spent |
+> Process events are recorded by an authorized recorder and link to their public source.
+> Validators read evidence URLs live. The contract does not independently prove that a
+> recorded event happened unless on-chain event verification is enabled for that rule.
 
-The official StudioNet deployment runs exactly the source in this repository:
-the stored contract code was downloaded, decoded, and hashed against
-`contracts/dao_resolve.py` (`f0a4abc1812e8d37…`, 1,463 lines).
+Additional limits that are visible in the UI:
 
-It is not a blank deployment either. Every public method was exercised on it
-from the owner account: rules registered and deprecated, events recorded, five
-disputes driven through `EVALUATED`, `CHALLENGED` → `RE_EVALUATED`,
-`WITHDRAWN`, `ESCALATED`, and `FINALIZED`, plus the two intended rejections
-(`finalize` in a vote-required category and `open_dispute` on a deprecated
-rule, both `EXPECTED:` rollbacks with state unchanged). Both evaluation paths
-ran and agree with the design: `D1` and `D5` were decided by
-`DETERMINISTIC_CHECKS` without a model call, `D4` by `INTERPRETATION` under real
-consensus. Transaction hashes and read output are in
-deployments/studionet.md.
+- Evidence `side` labels (`DISPUTANT`, `RESPONDENT`, `NEUTRAL`) are **self-declared**. The
+  contract records the label; it does not verify identity.
+- `web_digest` is leader-asserted and informational. It is not proof.
+- An unreadable source cannot support a decisive verdict, but the contract cannot verify
+  that readable content is true.
+- A wrong verdict that every validator shares is still possible. Consensus is a safety
+  mechanism, not omniscience.
+- Process events asserted by a single recorder are only as trustworthy as that recorder and
+  its sources. Strict separation can block recorders from participating, but it does not
+  verify the event itself.
+- Assessments are advisory. They never execute, cancel, or reverse governance actions.
 
-An earlier instance at `0xDD29Ae63…` runs the pre-`decided_by` revision. It is
-kept in the deployment record as an additional receipt trail; it does not match
-the working tree.
-
-StudioNet links:
-
-- Contract: https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb
-- Deploy transaction: https://explorer-studio.genlayer.com/tx/0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f
-- Open in Studio: https://studio.genlayer.com/?import-contract=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb
-
-The full deployment record, write transaction hashes, read outputs, and schema
-are in [deployments/studionet.md](deployments/studionet.md) and
-[deployments/studionet.schema.txt](deployments/studionet.schema.txt).
-
-## Lifecycle
+## Architecture
 
 ```text
-                 +-------------------+
-                 |       OPEN        |
-                 +---------+---------+
-                           |
-                    evaluate_dispute
-                           |
-                 +---------v---------+
-          +------>      EVALUATED    +------+
-          |      +---------+---------+      |
-          |                |                |
-   re_evaluate        challenge        withdraw / escalate
-          |                |                |
-          |      +---------v---------+      |
-          |      |     CHALLENGED    |      |
-          |      +---------+---------+      |
-          |                |                |
-          |          re_evaluate            |
-          |                |                |
-          |      +---------v---------+      |
-          +------+   RE_EVALUATED    |      |
-                 +---------+---------+      |
-                           |                |
-                       finalize       FINALIZED / ESCALATED / WITHDRAWN
+┌──────────────────┐     public source (Snapshot, forum, vote page)
+│  recorder CLI    │ ────────────────────────────────────────────┐
+│  ingest/submit   │  reproducible plan + source timestamps     │
+└────────┬─────────┘                                             │
+         │ record_process_event                                  │
+         ▼                                                       ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  DAOResolve contract (GenVM, Python)                                │
+│  rules v1..vN · proposals · events · disputes · evidence            │
+│  deterministic checks ──fail──► VIOLATION (no model call)           │
+│          │pass                                                      │
+│          ▼                                                          │
+│  leader + validators fetch evidence live → compare meaning          │
+│  assessments append-only · challenges · finality · escalation       │
+└────────┬────────────────────────────────────────────────────────────┘
+         │ reads + signed writes (genlayer-js)
+         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Vue frontend                                                       │
+│  overview · rules · proposals · disputes · admin · how it works     │
+│  read-only without wallet · wallet-signed writes · tx lifecycle     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-A dispute may only finalize after the challenge window closes with no pending
-challenge. Escalation records a handoff to the DAO's own procedure; it never
-executes, cancels, or reverses a governance action.
+## Repository layout
 
-## Public interface
-
-Write methods:
-
-| Method | Purpose |
-|---|---|
-| `set_role` | Owner assigns a role; zero address revokes |
-| `transfer_ownership` | Owner transfers owner powers |
-| `set_config` | Owner sets window, max rounds, and strict separation |
-| `set_category_vote_required` | Owner marks a category as requiring escalation |
-| `register_rule` | Register a rule or publish a new version |
-| `deprecate_rule` | Deprecate the latest rule version |
-| `register_proposal` | Register a proposal for event recording |
-| `record_process_event` | Append a proposal process event |
-| `open_dispute` | Open a dispute against the active rule version |
-| `submit_evidence` | Add bounded evidence to a dispute |
-| `evaluate_dispute` | Run deterministic checks and consensus interpretation |
-| `challenge_assessment` | Challenge the latest assessment |
-| `re_evaluate` | Produce a new assessment after a challenge |
-| `finalize_dispute` | Close after the window with no pending challenge |
-| `escalate_dispute` | Hand the dispute to the DAO's own procedure |
-| `withdraw_dispute` | Disputant withdraws the dispute |
-
-Read methods:
-
-| Method | Returns |
-|---|---|
-| `get_config` | Window, limits, roles, strict mode, vote-required categories |
-| `get_rule` / `get_rule_version` | Latest or pinned rule version |
-| `list_active_rules` | Bounded list of active rules |
-| `get_proposal` | Proposal metadata and event count |
-| `get_events` | Bounded process events for a proposal |
-| `get_dispute` | Dispute metadata, counts, latest assessment |
-| `get_dispute_status` | Current status |
-| `list_disputes` | Bounded dispute list |
-| `get_evidence` | Bounded evidence references |
-| `get_assessment_history` | Append-only assessments with check results |
-| `get_challenges` | Bounded challenge records |
-
-Exact signatures live in the contract source and are summarized in
-[docs/design.md](docs/design.md); read methods return the full assessment
-record, including check results, citations, and the evidence fingerprint.
+```text
+contracts/dao_resolve.py        Intelligent Contract (unchanged baseline)
+tests/direct/                   mocked web + LLM tests
+tests/integration/              real-consensus gltest scenarios
+recorder/                       Snapshot adapter, plan, submit, verify, tests, logs
+frontend/                       Vue 3 + Vite + genlayer-js app and tests
+scripts/                        deploy, seed, verify
+deployments/                    real StudioNet records and schema
+docs/                           design, equivalence, threat model, guide, demo, ledger
+```
 
 ## Quick start
 
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+### 1. Contract gates
 
-GENVM_VERSION=v0.3.0-rc7 genvm-lint check contracts/dao_resolve.py --json
-python3.12 -m pytest tests/direct/ -q
-gltest tests/integration/ -v -s --network studionet
+```bash
+pip install genvm-linter genlayer-test
+genvm-lint check contracts/dao_resolve.py --json
+python3.12 -m pytest tests/direct/ -v
 ```
 
-Deployment uses the GenLayer CLI with a built-in network selected through
-`genlayer network set`; RPC endpoints are not overridden manually. See
-[deployments/studionet.md](deployments/studionet.md).
+The contract is pinned to runner
+`py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`. Lint reports an
+informational notice that a newer runner exists; the pinned runner was accepted by
+StudioNet on 2026-10-23 in a fresh deployment (see
+[deployments/studionet.md](deployments/studionet.md)).
 
-## Documentation
+### 2. Recorder
 
-- [AGENTS.md](AGENTS.md) — operating rules and full project specification
-- [docs/design.md](docs/design.md) — design overview and state machine
-- [docs/domain-model.md](docs/domain-model.md) — entities and fields
-- [docs/state-machine.md](docs/state-machine.md) — transitions and guards
-- [docs/access-control.md](docs/access-control.md) — roles and trust assumptions
-- [docs/limits.md](docs/limits.md) — bounded inputs and lifecycle limits
-- [docs/api.md](docs/api.md) — public interface
-- [docs/equivalence.md](docs/equivalence.md) — consensus and equivalence design
-- [docs/threat-model.md](docs/threat-model.md) — threats, safeguards, and trust assumptions
-- [docs/examples.md](docs/examples.md) — worked scenarios and two sample DAOs
-- [docs/testing.md](docs/testing.md) — test strategy and quality gates
-- [docs/deployment.md](docs/deployment.md) — deployment procedure
-- [docs/glossary.md](docs/glossary.md) — terms used by the project
-- [deployments/studionet.md](deployments/studionet.md) — deployment record
+```bash
+npm install
+npm run recorder -- ingest snapshot \
+  'https://snapshot.box/#/s:ens.eth/proposal/0x943e585d1a4996525c5c7d229401d604ea56fe08c2c9c615c44f048ba42487b7' \
+  --proposal-id ENS-7.1
 
-## Reuse
+# Inspect the plan under recorder/logs/ENS-7.1.json, then send it:
+CONTRACT_ADDRESS=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb \
+RECORDER_PRIVATE_KEY=0x… \
+npm run recorder -- submit recorder/logs/ENS-7.1.json
 
-The contract is rule-agnostic: any DAO can register its own rules, categories,
-and deterministic checks without changing the contract.
-[docs/examples.md](docs/examples.md) walks through two complete samples — a
-grants council (quorum + community-discussion rules, with an escalation path)
-and a treasury payments DAO (timing + disclosure rules) — with the expected
-assessment and challenge outcome for each dispute.
+CONTRACT_ADDRESS=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb \
+npm run recorder -- verify recorder/logs/ENS-7.1.json
+```
 
-## Limitations
+`ingest` is a dry run. It fetches the public source, validates chronological order,
+rejects future or unsourced events, and writes a reproducible plan. It never invents a
+timestamp. The live ENS plan in `recorder/logs/ENS-7.1.json` was submitted and verified
+on StudioNet; the three transaction hashes are in the deployment record.
 
-- Recorders are trusted to record process events honestly.
-- Rule registrars are trusted to publish the rules the DAO intends to use.
-- Assessments are advisory unless a DAO explicitly wires them into its process.
-- External evidence can change, disappear, or be manipulated; leader and
-  validator fetch independently, so the stored fingerprint is drift visibility,
-  not proof of authenticity.
-- Evidence citations are a support floor, not proof of relevance or
-  sufficiency.
-- A failed deterministic check produces `VIOLATION` against the registered rule
-  version only; it is a failed configured requirement, not a legal finding.
-- The contract does not verify identity, hold funds, or execute governance actions.
-- Bradbury deployment is currently blocked by a node-side gas-limit rejection.
+### 3. Frontend
 
-## Credits
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev          # Vite proxies /api to https://studio.genlayer.com
+```
 
-Design informed by the GenLayer documentation, skills, SDK reference, and
-equivalence principle. Starters were studied for structure only; this project's
-design is original.
+For a production-style local run:
+
+```bash
+npm run lint
+npm test
+npm run build
+npm start            # serves dist/ and proxies /api
+```
+
+The Studio RPC does not send browser CORS headers. The Vite dev server and
+`frontend/server.js` both proxy `/api`; a static-only host needs an equivalent reverse
+proxy. This is a deployment requirement, not a mock: the app is reading the real contract
+through the proxy.
+
+Mock mode for UI work:
+
+```bash
+VITE_MOCK=1 npm run dev
+```
+
+Mock mode uses fixtures copied from real StudioNet reads and simulates transaction
+lifecycle. It is clearly labelled in the app.
+
+### 4. Deploy and verify
+
+```bash
+npm run deploy       # uses the active genlayer CLI account
+CONTRACT_ADDRESS=<address> npm run verify
+CONTRACT_ADDRESS=<address> DEMO_ACTOR=0x… npm run seed
+```
+
+## Demo walkthrough
+
+The deployed StudioNet contract already contains real demo data (read through the real
+frontend and captured in [docs/screenshots](docs/screenshots)):
+
+| Case | What it shows |
+|---|---|
+| `D1` | Deterministic `COMPLIANT`, challenged, re-evaluated; `decided_by = DETERMINISTIC_CHECKS` |
+| `D4` | Real validator consensus, `INCONCLUSIVE`, challenged with new evidence, re-evaluated, finalized |
+| `D3` | Escalated to the DAO's own procedure |
+| `D5` | Deterministic assessment; finalize blocked because the category requires escalation |
+| `ENS-7.1` | Recorder-ingested Snapshot proposal with three sourced events |
+
+A three-minute script with exact clicks and expected copy is in
+[docs/demo-script.md](docs/demo-script.md). The captured real-mode pages are
+[overview](docs/screenshots/overview-real.png),
+[D1](docs/screenshots/dispute-D1-real.png),
+[D4](docs/screenshots/dispute-D4-real.png), and
+[ENS-7.1](docs/screenshots/proposal-ENS-7.1-real.png).
+
+## Testing
+
+Real, current results:
+
+| Gate | Command | Result |
+|---|---|---|
+| Contract lint | `genvm-lint check contracts/dao_resolve.py --json` | clean, 3 checks passed; 28 methods |
+| Direct contract tests | `python3.12 -m pytest tests/direct/ -q` | **171 passed** |
+| Integration tests | `gltest tests/integration/ -v -s --network studionet` | **3 passed in 209.44s** (2026-10-20) |
+| Recorder typecheck | `npm run typecheck` | clean |
+| Recorder tests | `npm run recorder:test` | **8 passed** |
+| Frontend lint | `cd frontend && npm run lint` | clean |
+| Frontend unit tests | `cd frontend && npm test` | **14 passed** |
+| Frontend e2e (mock) | `cd frontend && npx playwright test` | **10 passed**, 4 real-mode tests skipped |
+| Frontend e2e (real reads) | `cd frontend && npm run test:e2e:real` | **4 passed** against StudioNet |
+| Frontend production build | `cd frontend && npm run build` | passes |
+| Deployment views | `CONTRACT_ADDRESS=… npm run verify` | 18/18 views passed on the demo address |
+
+The e2e suite needs a Playwright Chromium build. In this environment the cached browser
+was older than the package expected, so the run used:
+
+```bash
+PLAYWRIGHT_CHROMIUM_PATH=~/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell \
+  npx playwright test
+```
+
+CI installs the matching browser instead.
+
+## Live deployment
+
+| Item | Value |
+|---|---|
+| Network | StudioNet (gasless), chain id `61999` |
+| Demo contract | `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` |
+| Fresh smoke deployment | `0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e` |
+| Schema | `frontend/src/config/schema/dao_resolve.json`, `deployments/studionet.schema.json` |
+| Full records | [deployments/studionet.md](deployments/studionet.md) |
+
+Bradbury was not deployed: the available account has `0 GEN`, and the faucet is
+browser-based. StudioNet is gasless and is the demo network.
+
+## Frontend routes
+
+`/` overview · `/rules` · `/rules/:ruleId` · `/proposals` · `/proposals/:proposalId` ·
+`/disputes` · `/disputes/:disputeId` · `/admin` · `/how-it-works`
+
+The UI shows `submitted → pending → accepted → finalized` separately, never treats
+accepted as final, and renders a failed or undetermined evaluation as its own state with a
+retry, not as a verdict.
+
+## Known limitations
+
+- **F2 (contract, deferred):** anyone can fill the 32-slot evidence cap, and evidence sides
+  are self-declared. The UI labels sides as self-declared; the contract fix would need a
+  failing test first.
+- **F3 (consensus, inherent):** noisy evidence or citation choices can cause an
+  undetermined evaluation. Nothing is appended; the UI offers retry.
+- **F4 (contract, deferred):** URL evidence is truncated from the raw body, so
+  markup-heavy pages can lose readable text. A failing fixture test is the next step.
+- **F5 (state machine, deferred):** a challenged dispute stays `CHALLENGED` until someone
+  calls `re_evaluate`. The UI exposes the permissionless action.
+- **No `list_proposals` view:** the frontend discovers proposals from
+  `VITE_PROPOSAL_IDS`, and says so on the screen. Nothing is invented.
+- **Single-address roles:** the demo uses one owner account; the UI shows when all roles
+  point at the same address instead of pretending separation exists.
+- **Static hosting:** the Studio RPC needs a same-origin proxy. `frontend/server.js` and
+  the Vite config provide one.
+
+See [docs/threat-model.md](docs/threat-model.md) for the full findings table.
+
+## Roadmap
+
+1. Pilot with one real DAO: their rules, their real process events through the recorder, a
+   written case study only with permission.
+2. Rule templates for review periods, quorum disclosure, and conflict-of-interest
+   disclosure.
+3. More source adapters (governance forums, Tally, on-chain governor events).
+4. Optional on-chain event verification: fetch the source, extract a fixed fact set, record
+   an append-only verification result, never mutate the event.
+5. Read-only views and an advisory signal other DAO tooling can display.
+6. Replace single-address roles with a DAO-controlled address.
+
+## Credits and license
+
+Contract, recorder, frontend, docs, and tests in this repository. Built for GenLayer.
+MIT — see [LICENSE](LICENSE).

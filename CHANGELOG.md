@@ -2,6 +2,63 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-23 (full project pass: frontend, recorder, docs, fresh deploy)
+
+DONE:
+- Built the Vue 3 frontend in `frontend/`: overview, rules, proposals, disputes,
+  admin, how-it-works, wallet bar, process rail, assessment history, evidence,
+  challenges, finality banner, role gates, transaction lifecycle, and an
+  evaluation-failure notice with retry.
+- Added a same-origin Studio RPC proxy (`frontend/server.js` and Vite config)
+  because direct browser calls are blocked by CORS. Added read caching and a
+  rate-limit retry.
+- Added mock mode with real StudioNet fixtures and simulated transaction
+  lifecycle, clearly labelled in the UI.
+- Built the recorder CLI in `recorder/`: Snapshot GraphQL adapter, reproducible
+  plan, validation, dry-run `ingest`, `submit`, `verify`, tests, and a real ENS
+  ingest plan (`ENS-7.1`).
+- Added `scripts/deploy.sh`, `scripts/seed_demo.ts`,
+  `scripts/verify_deployment.ts`, and root typecheck/recorder scripts.
+- Added `SUBMISSION.md`, `docs/api-ledger.md`, `docs/guide-for-daos.md`,
+  `docs/demo-script.md`, recorder README, and CI workflow.
+- Reassigned the demo contract recorder to a separate address
+  `0x84a0cB58d217b08ed95b540b7D3ABdC5bBA3443C`, submitted the ENS plan, and
+  verified all three events.
+- Deployed the current source fresh to StudioNet to prove the pinned runner is
+  accepted: `0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e`.
+
+PROOF:
+- `genvm-lint check contracts/dao_resolve.py --json` -> clean, 3 checks passed,
+  28 methods.
+- `pytest tests/direct/ -q` -> **171 passed**.
+- `gltest tests/integration/ -v -s --network studionet` -> **3 passed in
+  209.44s** (2026-10-20 record; contract unchanged).
+- `npm run typecheck` -> clean.
+- `npm run recorder:test` -> **8 passed**.
+- `cd frontend && npm run lint` -> clean.
+- `cd frontend && npm test` -> **14 passed**.
+- `cd frontend && npx playwright test` -> **10 passed** (mock mode; 4 real-mode
+  tests skipped).
+- `cd frontend && npm run test:e2e:real` -> **4 passed** against the deployed
+  StudioNet contract (overview, D1, D4, ENS-7.1).
+- `cd frontend && npm run build` -> passes.
+- Real-mode Playwright read check -> metrics `2 / 3 / 4`, 7 dispute rows,
+  D1 assessment rendered, no page errors.
+- Recorder txs: `0x9e3173c0…`, `0x87dcb6da…`, `0x67d42def…`; verify printed
+  `Verified 3 events for proposal ENS-7.1.`
+- Fresh deploy tx: `0xc500a184…`, `FINALIZED`, `MAJORITY_AGREE`.
+
+NEXT: Host the frontend on a Node host with the `/api` proxy, run one real
+browser-wallet write on StudioNet, record the demo video, and update
+`SUBMISSION.md` with the live URL.
+
+BLOCKED:
+- No browser wallet in this environment, so the real wallet-signing lifecycle is
+  implemented and mock-tested but not exercised end to end here.
+- Bradbury still has no funded account; the faucet is browser-based. StudioNet
+  is the demo network.
+- The frontend is not hosted; the deployable server is `frontend/server.js`.
+
 ## 2026-10-20 (every public method exercised on the official deployment)
 
 DONE:

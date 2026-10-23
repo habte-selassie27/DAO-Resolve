@@ -4,16 +4,28 @@
 
 | Gate | Result |
 |---|---|
-| `genvm-lint` | Clean; 3 checks passed. One informational notice about a newer runner |
+| `genvm-lint` | Clean; 3 checks passed, 28 methods. One informational notice about a newer runner |
 | Direct tests | **171 passed** |
 | Integration tests | **3 passed in 209.44s on StudioNet** for the current source, and 3 passed in 270.07s for the earlier deployed revision; see `deployments/studionet.md` |
+| Recorder typecheck | Clean |
+| Recorder tests | **8 passed** |
+| Frontend lint | Clean |
+| Frontend unit tests | **14 passed** |
+| Frontend e2e (mock) | **10 passed**, 4 real-mode tests skipped |
+| Frontend e2e (real reads) | **4 passed** against StudioNet |
+| Frontend build | Passes |
 
 Commands used:
 
 ```bash
-GENVM_VERSION=v0.3.0-rc7 genvm-lint check contracts/dao_resolve.py --json
+genvm-lint check contracts/dao_resolve.py --json
 python3.12 -m pytest tests/direct/ -q
 gltest tests/integration/ -v -s --network studionet
+npm run typecheck
+npm run recorder:test
+cd frontend && npm run lint && npm test && npm run build
+cd frontend && npx playwright test
+cd frontend && npm run test:e2e:real
 ```
 
 The integration result is recorded from the deployment session. Re-run it before
@@ -24,7 +36,7 @@ claiming a fresh consensus result.
 Fast in-memory tests with mocked web and LLM calls:
 
 ```bash
-pytest tests/direct/ -v
+python3.12 -m pytest tests/direct/ -v
 ```
 
 ### Files and coverage
@@ -68,6 +80,32 @@ pytest tests/direct/ -v
 - Page drift between the leader's fetch and the validator's re-fetch: the same
   verdict still reaches consensus, a changed verdict is rejected.
 - Errors use stable prefixes and contain no raw model text.
+
+## Recorder and frontend tests
+
+The recorder tests use `tsx --test` and cover Snapshot URL parsing, event mapping,
+future-event omission, actor override, id mapping, validation, dry run, and plan
+round-trip without key material:
+
+```bash
+npm run recorder:test
+```
+
+The frontend unit tests use Vitest and jsdom; the mock e2e tests use a Vite dev server
+with `VITE_MOCK=1`. The opt-in real suite reads the deployed contract through the same
+`/api` proxy the app uses:
+
+```bash
+cd frontend
+npm run lint
+npm test
+npx playwright test
+npm run test:e2e:real
+```
+
+The real suite handles StudioNet's 30-requests-per-minute limit by waiting and retrying,
+and it asserts the live overview, `D1` (deterministic), `D4` (consensus), and `ENS-7.1`
+(recorder events).
 
 ## Integration tests
 

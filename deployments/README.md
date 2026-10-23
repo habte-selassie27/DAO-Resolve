@@ -4,11 +4,12 @@
 
 | Network | Record | Status |
 |---|---|---|
-| StudioNet | [studionet.md](studionet.md) | Official deployment `0xb4d8bf96…`, source verified byte-identical |
+| StudioNet | [studionet.md](studionet.md) | Demo deployment `0xb4d8bf96…`, source verified byte-identical; fresh pinned-runner deployment `0x1bB0D68F…` finalized on 2026-10-23 |
 | Bradbury Testnet | [bradbury.md](bradbury.md) | Blocked by node-side gas-limit rejection |
 
-The StudioNet schema dump is [studionet.schema.txt](studionet.schema.txt), taken
-from the official address. Every read and write method has been exercised on
+The StudioNet schema dump is [studionet.schema.json](studionet.schema.json), taken
+from the demo address. The older [studionet.schema.txt](studionet.schema.txt) is kept for
+the historical record. Every read and write method has been exercised on
 that instance, with all transaction hashes recorded in the same document. The
 write flow on the earlier instance `0xDD29Ae63…` is preserved there too, as an
 additional receipt trail for the evaluation pipeline.

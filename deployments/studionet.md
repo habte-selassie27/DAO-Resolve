@@ -425,3 +425,91 @@ entries:
 | `0x2dA2f6...` | superseded |
 | `0x367369...` | superseded |
 | `0x51Fec4...` | superseded |
+
+## 2026-10-23 update: fresh deploy, recorder role, live ENS ingestion
+
+This section is newer than the records above and does not rewrite them. The demo address
+`0xb4d8bf96…` is still the contract the frontend uses. Its `recorder` role was reassigned
+so the recorder CLI could be exercised with a separate key. The historical config snippet
+above shows the old recorder address; the current value is below.
+
+### Fresh deployment of the pinned runner (smoke test)
+
+The pinned runner in `contracts/dao_resolve.py` was redeployed from the current working
+tree to prove the target network accepts it. This is a clean instance with no demo data.
+
+| Item | Value |
+|---|---|
+| Contract address | `0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e` |
+| Deploy transaction | `0xc500a18432b27137ff002628b939d01d5287fe8ac3785ea88dbdb1dd846dd2c9` |
+| Receipt | `status_name: FINALIZED`, `result_name: MAJORITY_AGREE` |
+| Lint | clean, 3 checks passed; 28 methods (12 read, 16 write) |
+| Role setup | all four roles set to `0x5B3661C576c7001e6d6279C67F3779705d334c89` |
+| View check | `npm run verify` -> config, empty active rules, empty disputes, all configured views passed |
+
+Explorer: <https://explorer-studio.genlayer.com/address/0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e>
+
+### Recorder role and live ENS ingestion
+
+The demo contract's recorder was changed to a separate address so the recorder CLI could
+submit with `RECORDER_PRIVATE_KEY` without using the owner key. No key is recorded here.
+
+```text
+Current config (2026-10-23):
+  challenge_window: 86400
+  max_challenge_rounds: 3
+  strict_separation: false
+  owner: 0x5B3661C576c7001e6d6279C67F3779705d334c89
+  rule_registrar: 0x5B3661C576c7001e6d6279C67F3779705d334c89
+  escalator: 0x5B3661C576c7001e6d6279C67F3779705d334c89
+  recorder: 0x84a0cB58d217b08ed95b540b7D3ABdC5bBA3443C
+```
+
+Public source: ENS Snapshot proposal
+`0x943e585d1a4996525c5c7d229401d604ea56fe08c2c9c615c44f048ba42487b7`
+(<https://snapshot.box/#/s:ens.eth/proposal/0x943e585d1a4996525c5c7d229401d604ea56fe08c2c9c615c44f048ba42487b7>).
+
+The recorder mapped the public timestamps to contract proposal `ENS-7.1` (Snapshot ids are
+66 characters; contract ids are capped at 64). The plan is
+`recorder/logs/ENS-7.1.json`. It records the raw fields used and warns that voting events
+use the Snapshot author as the actor.
+
+| Event | Timestamp | Transaction |
+|---|---|---|
+| `submitted` (`SUBMITTED`) | `1783988115` | `0x9e3173c0114ebef2196d0bf29ffd796c1b361d21f12a31bc13e395698b72c511` |
+| `voting-started` (`VOTING_STARTED`) | `1783988115` | `0x87dcb6daa4921d384b8a84633b09cfcd2d61629177608ecd98361a04f6f31294` |
+| `voting-ended` (`VOTING_ENDED`) | `1784420115` | `0x67d42deff8f03b38cf15add158346ec65e409f7b37c967ee07356377a86320ec` |
+
+Read-back: `get_proposal ENS-7.1` returns `event_count: 3`; `get_events ENS-7.1 0 50`
+returns the three events. `npm run recorder -- verify recorder/logs/ENS-7.1.json` printed:
+`Verified 3 events for proposal ENS-7.1.`
+
+### Frontend real-mode read check
+
+A production build was served by `frontend/server.js`, which proxies `/api` to StudioNet.
+A headless Chromium run against the real contract rendered:
+
+- overview metrics `2 / 3 / 4` (2 active rules, 3 in-progress disputes, 4 final/handoff);
+- 7 recent dispute rows;
+- `/disputes/D1` with status `RE_EVALUATED`, verdict `COMPLIANT`, `decided_by = Rule check`;
+- `/disputes/D4` with the validator-consensus verdict and `Finalized record`;
+- no page errors.
+
+Captured pages (real reads, no wallet, no mock):
+[docs/screenshots/overview-real.png](../docs/screenshots/overview-real.png),
+[docs/screenshots/dispute-D1-real.png](../docs/screenshots/dispute-D1-real.png),
+[docs/screenshots/dispute-D4-real.png](../docs/screenshots/dispute-D4-real.png),
+[docs/screenshots/proposal-ENS-7.1-real.png](../docs/screenshots/proposal-ENS-7.1-real.png).
+
+A real browser-wallet write was not run: no browser wallet is available in this
+environment. Mock-mode e2e covers the lifecycle UI; the recorder covers real signed writes.
+The frontend is not hosted; `frontend/server.js` is the deployable server.
+
+### Schema
+
+The deployed schema was saved in two places:
+
+- `frontend/src/config/schema/dao_resolve.json` (28 methods)
+- `deployments/studionet.schema.json` (same object)
+
+The older `deployments/studionet.schema.txt` is retained for the historical record.

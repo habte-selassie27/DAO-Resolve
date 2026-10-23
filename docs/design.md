@@ -33,7 +33,15 @@ deployment is `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`, whose stored code is
 byte-identical to the working file (SHA-256 `f0a4abc1…`). Every read and write
 method has been exercised on that instance, including a dispute that reached
 `FINALIZED` and one that was escalated after a vote-required category blocked
-finality. See [deployment.md](deployment.md) and [testing.md](testing.md).
+finality.
+
+The repository now also contains the recorder CLI (`recorder/`), the Vue
+frontend (`frontend/`), deployment scripts, and a real ENS Snapshot ingest
+(`ENS-7.1`). The frontend reads the deployed contract through a same-origin
+Studio proxy and shows the full transaction lifecycle. A fresh deployment of
+the pinned runner finalized on 2026-10-23 (`0x1bB0D68F…`). See
+[deployment.md](deployment.md), [api-ledger.md](api-ledger.md), and
+[testing.md](testing.md).
 
 ## 3. Core design principles
 
@@ -154,14 +162,16 @@ In scope:
 - Challenges, re-evaluation, finalization, and escalation.
 - Auditable assessment history.
 
-Out of scope:
+Out of scope for the contract:
 
-- UI or frontend.
 - Voting, tallying, treasuries, or fund execution.
 - Automatic enforcement of verdicts.
 - Identity verification.
 - Legal rulings.
 - Off-chain indexers or backends.
+
+In the repository, the frontend and recorder are separate components around the
+contract. They are not trusted by the contract and cannot change its rules.
 
 ## 9. Related documents
 
@@ -173,4 +183,7 @@ Out of scope:
 - [equivalence.md](equivalence.md)
 - [threat-model.md](threat-model.md)
 - [examples.md](examples.md)
+- [guide-for-daos.md](guide-for-daos.md)
+- [demo-script.md](demo-script.md)
+- [api-ledger.md](api-ledger.md)
 - [testing.md](testing.md)

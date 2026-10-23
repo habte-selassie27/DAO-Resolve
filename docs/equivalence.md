@@ -162,6 +162,27 @@ new assessment is appended with `produced_by = RE_EVALUATION`.
 interpretation and changing web pages are not reproducible. Comparing reasoning
 text would reject honest consensus and reward wording coincidence.
 
+## Observed runs
+
+Real StudioNet runs on 2026-10-20 (contract unchanged since; see
+[deployments/studionet.md](../deployments/studionet.md)):
+
+| Run | Decision path | Verdict | Notes |
+|---|---|---|---|
+| `D1#a1` | deterministic | `COMPLIANT` | No model call. `MIN_ELAPSED` elapsed == threshold. |
+| `D4#a1` | interpretation | `INCONCLUSIVE` | Real leader/validators; cited only the rule clause, no evidence. |
+| `D4#a2` | interpretation | `INCONCLUSIVE` | Re-evaluation after a challenge; cited `D4#e1`, `D4#e2`, and new `D4#e3`. |
+
+Both `D4` rounds reached consensus (evaluate in 29.2 s, re-evaluate in 23.6 s). No
+validator disagreement failure was observed on this deployment. That is a small sample, not
+a reliability claim: the semantics intentionally reject honest runs that cite different
+readable evidence or land two confidence bands apart. The UI treats such a failure as an
+undetermined result with retry, never as `COMPLIANT`.
+
+Direct tests cover page drift between the leader fetch and the validator re-fetch. The
+contract stores the leader's `web_digest` but does not compare it, so the UI labels it
+informational rather than proof.
+
 ## Tests
 
 - `tests/direct/test_evaluation_parsing.py` covers JSON parsing, aliases,
