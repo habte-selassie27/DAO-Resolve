@@ -19,7 +19,13 @@
       </p>
     </div>
 
-    <ErrorNotice v-if="error" :error="error" title="Could not load proposals" />
+    <ErrorNotice
+      v-if="error"
+      :error="error"
+      title="Could not load proposals"
+      retry-label="Try again"
+      @retry="load"
+    />
     <div v-if="loading" class="stack"><div class="skeleton" style="width: 50%" /><div class="skeleton" style="width: 75%" /></div>
     <div v-else-if="proposals.length" class="grid two">
       <article v-for="proposal in proposals" :key="proposal.proposal_id" class="panel">
@@ -41,8 +47,10 @@
     <EmptyState v-else :message="emptyCopy.proposals" />
 
     <SheetDialog :open="showForm" title="Register a proposal" @close="showForm = false">
-      <RoleGate role="recorder" title="Registering proposals needs the recorder role">
-        <form @submit.prevent="submit">
+      <p v-if="!state.address" class="notice system small" style="margin-bottom: 12px">
+        Connect a wallet to sign this transaction. Reads work without one.
+      </p>
+      <form @submit.prevent="submit">
           <div class="field">
             <label for="proposal-id">Proposal id</label>
             <input id="proposal-id" v-model.trim="form.proposalId" required placeholder="P-001" />
@@ -59,11 +67,10 @@
           </div>
           <p v-if="formError" class="notice violation small">{{ formError }}</p>
           <div class="row">
-            <button class="button" type="submit" :disabled="submitting">{{ submitting ? "Submitting…" : "Register proposal" }}</button>
+            <button class="button" type="submit" :disabled="submitting || !state.address">{{ submitting ? "Submitting…" : "Register proposal" }}</button>
             <button class="button secondary" type="button" @click="showForm = false">Cancel</button>
           </div>
         </form>
-      </RoleGate>
     </SheetDialog>
   </div>
 </template>
@@ -72,8 +79,8 @@
 import { onMounted, reactive, ref } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import ErrorNotice from "../components/ErrorNotice.vue";
-import RoleGate from "../components/RoleGate.vue";
 import SheetDialog from "../components/SheetDialog.vue";
+import { state } from "../lib/store.js";
 import { emptyCopy } from "../domain/copy.js";
 import { formatTime } from "../lib/format.js";
 import { listProposals } from "../lib/chain/reads.js";
@@ -117,7 +124,7 @@ async function submit() {
   }
   submitting.value = true;
   try {
-    await runTransaction({
+    const result = await runTransaction({
       label: `Register proposal ${form.proposalId}`,
       send: () =>
         registerProposal({
@@ -127,8 +134,14 @@ async function submit() {
         }),
       onFinalized: load,
     });
+    if (!result.ok) {
+      formError.value = "The transaction did not finalize. Review the transaction tray and try again.";
+      return;
+    }
     showForm.value = false;
     Object.assign(form, { proposalId: "", contentRef: "", statusNote: "" });
+  } catch (txError) {
+    formError.value = txError?.message || "The transaction could not be submitted.";
   } finally {
     submitting.value = false;
   }

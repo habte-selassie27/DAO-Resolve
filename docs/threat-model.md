@@ -194,9 +194,13 @@ documented and deferred until a failing test exists, per the change policy.
 ### RPC proxy abuse
 
 The browser cannot call StudioNet directly because the endpoint does not send CORS
-headers. `frontend/server.js` exposes a same-origin `/api` proxy to a fixed upstream and
-serves only static files otherwise. It does not accept an arbitrary target URL, so it
-cannot be used as an open proxy. The upstream RPC is public; the proxy adds no secret.
+headers. `frontend/server.js` and `frontend/vercel.json` expose a same-origin `/api` proxy
+to one fixed upstream and serve only static files otherwise. They do not accept an
+arbitrary target URL, so they cannot be used as open proxies. The upstream RPC is public;
+the proxy adds no secret. The hosted proxy shares Vercel egress, so a busy reviewer can hit
+StudioNet's 30-requests-per-minute limit more quickly; the frontend caches reads, retries
+once, and shows a plain retry notice. Hosting never receives a signing key: writes still
+require the user's wallet.
 
 ### Untrusted chain text
 
@@ -220,8 +224,8 @@ test checks the plan text for private-key material.
 ### Mock mode confusion
 
 Mock mode is opt-in with `VITE_MOCK=1` and displays a persistent banner. E2E tests run only
-in mock mode; the real-mode read path was checked separately against the deployed
-contract. The app must not be presented as live while the banner is visible.
+in mock mode; the real-mode read path is checked separately against the deployed contract
+and the hosted app. The app must not be presented as live while the banner is visible.
 
 ### Stale reads after a write
 

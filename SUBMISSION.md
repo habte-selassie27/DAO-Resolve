@@ -61,7 +61,7 @@ clearly labelled and never touches the network.
   consensus, and finalized states, and the contract returned the new proposal. The
   MetaMask extension UX itself is still untested.
 - Contract lint is clean, 171 direct tests pass, 3 integration tests passed under real
-  consensus, recorder typecheck and 8 recorder tests pass, frontend lint and 14 unit tests
+  consensus, recorder typecheck and 8 recorder tests pass, frontend lint and 25 unit tests
   pass, and 10 mock-mode e2e tests pass.
 
 **Trusted:**
@@ -114,7 +114,7 @@ cd frontend && npm run lint
 clean
 
 cd frontend && npm test
-14 passed
+25 passed
 
 cd frontend && npx playwright test
 10 passed, 4 real-mode tests skipped
@@ -123,8 +123,8 @@ cd frontend && npm run test:e2e:real
 4 passed
 
 # hosted app, real reads
-Playwright https://daoresolve.vercel.app
-overview 2 / 3 / 4, 7 rows; D1, D4, ENS-7.1; no console errors
+Playwright https://daoresolve.vercel.app (paced)
+overview 2 / 3 / 4, 7 rows; D1 compliant, D5 violation, D4, ENS-7.1; no console errors
 
 CONTRACT_ADDRESS=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb npm run verify
 18/18 configured views passed
@@ -145,11 +145,15 @@ Limitations, stated rather than hidden:
 - A challenged dispute stays `CHALLENGED` until someone calls `re_evaluate` (F5). The UI
   exposes the permissionless action.
 - The contract has no `list_proposals` view; the frontend reads configured ids and says so.
-- The demo uses one owner account for all roles; the UI shows this.
-- Studio RPC requires a same-origin proxy for browser reads; the repo ships one.
+- The demo uses one account for owner, registrar, and escalator; the recorder is separate.
+  The UI shows when roles point at the same address.
+- Studio RPC requires a same-origin proxy for browser reads; the repo ships a Vercel
+  rewrite, a Node server, and a Vite dev proxy. StudioNet allows 30 requests per minute,
+  so rapid clicking can hit a retry notice; the hosted proxy shares Vercel egress.
 - The genlayer-js wallet path was exercised with an injected EIP-1193 provider; the
-  MetaMask extension UX was not. Bradbury deployment was not exercised: no funded account
-  was available and the faucet is browser-based.
+  MetaMask extension UX was not. Bradbury deployment was not exercised: the one funded
+  attempt (`0x04e0…db1b`, 9.93 GEN) was rejected with `gas limit too high`, and no later
+  funded attempt was made. StudioNet is the demo network.
 
 Roadmap:
 

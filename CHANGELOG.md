@@ -2,6 +2,89 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-23 (frontend honesty and resilience fixes)
+
+DONE:
+- Diagnosed the "Could not load rules" / empty proposals / disabled forms report: the
+  StudioNet endpoint had a transient failure while the browser screens loaded, so
+  `list_active_rules`, `get_proposal`, and `get_config` all failed through the Vite proxy
+  at that moment. Direct RPC and the proxy both return data (2 active rules, P1-P5 and
+  ENS-7.1, D1-D5), confirmed with real reads.
+- Fixed the role-gate honesty defect: when `get_config` could not be read, `RoleGate`
+  claimed "the connected account doesn't hold the role" even for the owner account. It now
+  has three honest states: unverified ("Roles couldn't be verified because the network read
+  failed. Nothing is wrong with your account." with a Try again button), no wallet, and a
+  verified missing role.
+- Classified browser network failures (`Failed to fetch`, 502/503/504, `ECONNRESET`, socket
+  hang up, and related) as their own error class with a plain "Nothing was changed" message
+  instead of the unknown fallback; the classifier (`isNetworkError`) is shared by the error
+  map and the read retry so the two can never diverge.
+- `reads.js` now retries once on transient network errors (2s) in addition to rate limits
+  (4s), so a shared-endpoint hiccup becomes a short delay instead of a broken screen.
+- `ErrorNotice` gained an optional retry button; all eight screens that show it are wired to
+  their own reload function (Rules, RuleDetail, Proposals, ProposalDetail, Disputes,
+  DisputeDetail, Overview, Admin config).
+- Kept role-gated rule and proposal creation as designed (rules are the judging standard;
+  events feed the deterministic checks); the trust reasoning is documented here rather than
+  changed in the contract.
+
+PROOF:
+- `cd frontend && npm test` -> **25 passed** (11 new: 2 assessment-panel, 2 network-error
+  mapping, 2 `isNetworkError`, 2 ErrorNotice retry, 3 RoleGate states).
+- `cd frontend && npm run lint` -> clean.
+- `cd frontend && npm run build` -> passes.
+- Live reads through the Vite `/api` proxy: `get_config` and `list_active_rules` return
+  real data; 10-request parallel burst returns 200 for all.
+
+NEXT: reload the app with a wallet on StudioNet; the deployer account `0x5B36…4c89` holds
+owner and registrar, so both forms unlock once config loads.
+
+BLOCKED: none.
+
+## 2026-10-23 (pre-submit review fixes)
+
+DONE:
+- Corrected the D5 evidence record: the on-chain assessment is `VIOLATION` because
+  `MIN_ELAPSED` failed with `missing from_event=SUBMITTED` (`P5` has no events), not
+  `COMPLIANT`. Updated the deployment record, changelog, README, and demo script.
+- Reconciled the Bradbury status: the 2026-10-19 attempt with `0x04e0…db1b` (9.93 GEN)
+  was rejected by the node with `gas limit too high`; the README and API ledger no longer
+  claim an empty account was the reason.
+- Fixed `AssessmentPanel`: a `COMPLIANT` deterministic assessment now gets the compliant
+  notice class and copy, not the red violation style. Added two unit regressions.
+- Forms now stay open when a transaction is rejected, reverted, or fails consensus, so the
+  entered data is not lost. Applies to rule registration, proposal registration, process
+  events, and dispute opening.
+- Scoped "no console errors" to the paced hosted read run and documented StudioNet's
+  30-requests-per-minute limit in the README limitations.
+- Labeled the second integration test table by date.
+- Added the concurrent frontend resilience pass: browser/network failures get an honest
+  message instead of a user-blaming one, reads retry once on a transient network error,
+  error notices offer a retry, and role gates distinguish "roles could not be verified"
+  from "this account lacks the role".
+
+PROOF:
+- `cd frontend && npm test` -> **25 passed**.
+- `cd frontend && npm run lint` -> clean.
+- `cd frontend && npx playwright test` -> **10 passed**, 4 real-mode tests skipped.
+- `cd frontend && npm run build` -> passes.
+- `python3.12 -m pytest tests/direct/ -q` -> **171 passed**.
+- `gltest tests/integration/ -v -s --network studionet` -> **3 passed in 261.76s**.
+- Live `get_dispute D5` confirms `VIOLATION`, `deterministic_fail_count: 1`,
+  `detail: missing from_event=SUBMITTED`.
+- Hosted corrected build: overview `2 / 3 / 4` and 7 rows; `D1` shows one compliant
+  notice and zero violation notices; `D5` shows one violation notice and the failed-check
+  detail; `D4` and `ENS-7.1` render; no console errors in the paced run.
+
+NEXT: Run the second strict review pass, then exercise the MetaMask extension, record the
+demo video, and prepare public post drafts.
+
+BLOCKED:
+- MetaMask extension UX: not installed in this environment.
+- Bradbury: the node rejects the current deploy with `gas limit too high`; no funded retry
+  has succeeded.
+- Demo video and public posts: user-owned publishing steps.
+
 ## 2026-10-23 (hosted frontend on Vercel)
 
 DONE:
@@ -18,7 +101,8 @@ DONE:
 
 PROOF:
 - Live URL: <https://daoresolve.vercel.app>
-- Vercel deployment: `dpl_3Diz8bYmaA9Cku5vEGdbXv5cjSom`
+- Vercel deployment: `dpl_6QBeKa7rbGsB3bCNma2ndTJuWjrG` (final build; earlier
+  corrected build `dpl_94ZdDfdRUHRjWRT2EwK6C93T1qzg`, initial `dpl_3Diz8bYmaA9Cku5vEGdbXv5cjSom`)
 - Proxy check: `POST /api` -> `200`, `{"jsonrpc":"2.0","result":"0xf22f","id":1}`
 - Screenshots: `docs/screenshots/vercel-overview-real.png`,
   `docs/screenshots/vercel-dispute-D1-real.png`.
@@ -127,7 +211,8 @@ BLOCKED:
   implemented and mock-tested but not exercised end to end here.
 - Bradbury still has no funded account; the faucet is browser-based. StudioNet
   is the demo network.
-- The frontend is not hosted; the deployable server is `frontend/server.js`.
+- At that point the frontend was not hosted; the deployable server was
+  `frontend/server.js`.
 
 ## 2026-10-20 (every public method exercised on the official deployment)
 
@@ -141,11 +226,14 @@ DONE:
   `D3` open → escalate (`ESCALATED`), `D4` open → evaluate → challenge →
   re-evaluate → finalize (`FINALIZED`), `D5` open → evaluate → finalize
   (blocked) → escalate (`ESCALATED`).
-- Confirmed both decision paths on chain: `D1#a1`/`D1#a2`/`D5#a1` returned
-  `decided_by: 'DETERMINISTIC_CHECKS'` with `detail: 'elapsed=100
-  threshold=100'`; `D4#a1`/`D4#a2` returned `decided_by: 'INTERPRETATION'`
-  with `verdict: 'INCONCLUSIVE'`, because two contradictory text statements
-  cannot prove that discussion occurred.
+- Confirmed both decision paths on chain: `D1#a1`/`D1#a2` returned
+  `decided_by: 'DETERMINISTIC_CHECKS'` with `verdict: 'COMPLIANT'` and
+  `detail: 'elapsed=100 threshold=100'`; `D5#a1` returned the same decision
+  source with `verdict: 'VIOLATION'` because `MIN_ELAPSED` failed with
+  `missing from_event=SUBMITTED` (`P5` has no events). `D4#a1`/`D4#a2`
+  returned `decided_by: 'INTERPRETATION'` with `verdict: 'INCONCLUSIVE'`,
+  because two contradictory text statements cannot prove that discussion
+  occurred.
 - Verified the citation behaviour under real consensus: `D4#a1` cited no
   evidence ids and recorded `web_digest: 'D4#e1=41:No forum thr;D4#e2=65:A
   forum thre'`; after the challenge added `D4#e3`, the re-evaluation cited

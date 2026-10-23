@@ -11,7 +11,13 @@
       <button class="button secondary" type="button" @click="refresh">Refresh config</button>
     </div>
 
-    <ErrorNotice v-if="state.configError" :error="state.configError" title="Could not read config" />
+    <ErrorNotice
+      v-if="state.configError"
+      :error="state.configError"
+      title="Could not read config"
+      retry-label="Try again"
+      @retry="refresh"
+    />
     <div v-if="!state.config" class="panel"><div class="skeleton" style="width: 60%" /></div>
     <template v-else>
       <section class="grid two">

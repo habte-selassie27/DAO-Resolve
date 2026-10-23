@@ -1,5 +1,6 @@
 import { contractAddress, mockMode } from "../../config/contracts.js";
 import { readClient } from "./clients.js";
+import { isNetworkError } from "../errors.js";
 import * as mock from "../mock/client.js";
 
 export function normalize(value) {
@@ -29,6 +30,12 @@ async function withRetry(operation) {
     const message = String(error?.message || error);
     if (/rate limit|too many requests|429/i.test(message)) {
       await new Promise((resolve) => setTimeout(resolve, 4000));
+      return operation();
+    }
+    // The shared public endpoint can hiccup under the burst of reads a screen
+    // fires on load. One quick retry turns a whole-screen failure into a delay.
+    if (isNetworkError(message)) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       return operation();
     }
     throw error;

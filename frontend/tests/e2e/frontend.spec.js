@@ -38,6 +38,8 @@ test("dispute detail distinguishes code and consensus decisions", async ({ page 
   await expect(page.getByRole("heading", { name: "Dispute D1" })).toBeVisible();
   await expect(page.getByText("Rule check").first()).toBeVisible();
   await expect(page.getByText("Assessment history")).toBeVisible();
+  await expect(page.locator(".notice.violation")).toHaveCount(0);
+  await expect(page.getByText("All configured rule checks passed in code")).toBeVisible();
 
   await page.goto("/disputes/D4");
   await expect(page.getByText("Validator consensus").first()).toBeVisible();

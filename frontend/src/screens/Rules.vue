@@ -19,7 +19,13 @@
       <RouterLink class="small" to="/proposals">Proposals →</RouterLink>
     </div>
 
-    <ErrorNotice v-if="error" :error="error" title="Could not load rules" />
+    <ErrorNotice
+      v-if="error"
+      :error="error"
+      title="Could not load rules"
+      retry-label="Try again"
+      @retry="load"
+    />
     <div v-if="loading" class="stack"><div class="skeleton" style="width: 45%" /><div class="skeleton" style="width: 70%" /></div>
     <div v-else-if="filteredRules.length" class="stack" style="gap: 12px">
       <article v-for="rule in filteredRules" :key="`${rule.rule_id}-${rule.version}`" class="panel">
@@ -49,8 +55,10 @@
     <EmptyState v-else :message="query ? 'No active rule matches that search.' : emptyCopy.rules" />
 
     <SheetDialog :open="showForm" title="Register a rule" @close="showForm = false">
-      <RoleGate role="registrar" title="Registering rules needs the registrar role">
-        <form @submit.prevent="submit">
+      <p v-if="!state.address" class="notice system small" style="margin-bottom: 12px">
+        Connect a wallet to sign this transaction. Reads work without one.
+      </p>
+      <form @submit.prevent="submit">
           <div class="form-grid">
             <div class="field">
               <label for="rule-id">Rule id</label>
@@ -93,13 +101,12 @@
           <hr class="divider" />
           <p v-if="formError" class="notice violation small">{{ formError }}</p>
           <div class="row">
-            <button class="button" type="submit" :disabled="submitting">
+            <button class="button" type="submit" :disabled="submitting || !state.address">
               {{ submitting ? "Submitting…" : "Register rule" }}
             </button>
             <button class="button secondary" type="button" @click="showForm = false">Cancel</button>
           </div>
         </form>
-      </RoleGate>
     </SheetDialog>
   </div>
 </template>
@@ -109,9 +116,8 @@ import { computed, onMounted, reactive, ref } from "vue";
 import CheckEditor from "../components/CheckEditor.vue";
 import EmptyState from "../components/EmptyState.vue";
 import ErrorNotice from "../components/ErrorNotice.vue";
-import RoleGate from "../components/RoleGate.vue";
 import SheetDialog from "../components/SheetDialog.vue";
-import { emptyCopy } from "../domain/copy.js";
+import { state } from "../lib/store.js";
 import { listActiveRules } from "../lib/chain/reads.js";
 import { registerRule } from "../lib/chain/writes.js";
 import { runTransaction } from "../lib/chain/tx.js";
@@ -183,7 +189,7 @@ async function submit() {
   if (formError.value) return;
   submitting.value = true;
   try {
-    await runTransaction({
+    const result = await runTransaction({
       label: `Register rule ${form.ruleId}`,
       send: () =>
         registerRule({
@@ -205,6 +211,10 @@ async function submit() {
         }),
       onFinalized: load,
     });
+    if (!result.ok) {
+      formError.value = "The transaction did not finalize. Review the transaction tray and try again.";
+      return;
+    }
     showForm.value = false;
     Object.assign(form, {
       ruleId: "",
@@ -214,6 +224,8 @@ async function submit() {
       clauseText: "",
       checks: [],
     });
+  } catch (txError) {
+    formError.value = txError?.message || "The transaction could not be submitted.";
   } finally {
     submitting.value = false;
   }

@@ -16,7 +16,13 @@
       <RouterLink class="button secondary" to="/disputes">Disputes using rules</RouterLink>
     </div>
 
-    <ErrorNotice v-if="error" :error="error" title="Could not load this rule" />
+    <ErrorNotice
+      v-if="error"
+      :error="error"
+      title="Could not load this rule"
+      retry-label="Try again"
+      @retry="load"
+    />
     <div v-if="loading" class="stack"><div class="skeleton" style="width: 70%" /><div class="skeleton" style="width: 90%" /></div>
     <template v-else-if="rule">
       <section class="panel">

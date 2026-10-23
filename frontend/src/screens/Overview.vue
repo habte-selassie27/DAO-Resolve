@@ -113,7 +113,13 @@
         <RouterLink class="small" to="/disputes">All disputes</RouterLink>
       </div>
       <div v-if="loading" class="stack"><div class="skeleton" style="width: 60%" /><div class="skeleton" style="width: 80%" /></div>
-      <ErrorNotice v-else-if="error" :error="error" title="Could not load disputes" />
+      <ErrorNotice
+        v-else-if="error"
+        :error="error"
+        title="Could not load disputes"
+        retry-label="Try again"
+        @retry="load"
+      />
       <div v-else-if="disputes.length" style="overflow-x: auto">
         <table>
           <thead><tr><th>Dispute</th><th>Proposal</th><th>Rule</th><th>Status</th><th>Challenges</th><th></th></tr></thead>
@@ -160,7 +166,9 @@ const metrics = computed(() => {
   };
 });
 
-onMounted(async () => {
+async function load() {
+  loading.value = true;
+  error.value = "";
   try {
     const [rulePage, disputePage] = await Promise.all([listActiveRules(0, 50), listDisputes(0, 50)]);
     rules.value = rulePage || [];
@@ -194,5 +202,7 @@ onMounted(async () => {
   } catch (loadError) {
     casesError.value = loadError?.message || String(loadError);
   }
-});
+}
+
+onMounted(load);
 </script>

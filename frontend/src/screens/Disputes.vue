@@ -23,7 +23,13 @@
       <span class="chip">{{ filtered.length }} shown</span>
     </div>
 
-    <ErrorNotice v-if="error" :error="error" title="Could not load disputes" />
+    <ErrorNotice
+      v-if="error"
+      :error="error"
+      title="Could not load disputes"
+      retry-label="Try again"
+      @retry="load"
+    />
     <div v-if="loading" class="stack"><div class="skeleton" style="width: 55%" /><div class="skeleton" style="width: 80%" /></div>
     <div v-else-if="filtered.length" class="panel" style="overflow-x: auto">
       <table>
@@ -77,7 +83,9 @@ const filtered = computed(() => {
   });
 });
 
-onMounted(async () => {
+async function load() {
+  loading.value = true;
+  error.value = "";
   try {
     const page = (await listDisputes(0, 50)) || [];
     const details = await Promise.all(
@@ -95,5 +103,7 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-});
+}
+
+onMounted(load);
 </script>

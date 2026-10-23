@@ -1,3 +1,13 @@
+// Browser fetch and proxy failures never reach the contract's error taxonomy,
+// so they need their own classifier. Shared with reads.js so the retry decision
+// and the user-facing message can never diverge.
+const NETWORK_ERROR_PATTERN =
+  /failed to fetch|fetch failed|networkerror|network request failed|econnreset|etimedout|epipe|socket hang up|user aborted|request aborted|the user aborted|load failed|bad gateway|service unavailable|\b502\b|\b503\b|\b504\b|certificate|getaddrinfo|dns lookup/i;
+
+export function isNetworkError(text) {
+  return NETWORK_ERROR_PATTERN.test(String(text || ""));
+}
+
 const rules = [
   {
     match: /caller is not authorized/i,
@@ -83,6 +93,12 @@ const rules = [
     message:
       "Validators couldn't produce a usable answer. Nothing changed. Request the assessment again.",
     action: "Request the assessment again.",
+  },
+  {
+    // Last rule on purpose: contract-prefixed messages must match first.
+    match: NETWORK_ERROR_PATTERN,
+    message: "The network request failed or the RPC endpoint refused it. Nothing was changed.",
+    action: "Check the connection and try again.",
   },
 ];
 

@@ -229,7 +229,7 @@ frontend and captured in [docs/screenshots](docs/screenshots)):
 | `D1` | Deterministic `COMPLIANT`, challenged, re-evaluated; `decided_by = DETERMINISTIC_CHECKS` |
 | `D4` | Real validator consensus, `INCONCLUSIVE`, challenged with new evidence, re-evaluated, finalized |
 | `D3` | Escalated to the DAO's own procedure |
-| `D5` | Deterministic assessment, then escalated because `TIMING` was vote-required at the time; the policy was restored afterward |
+| `D5` | Deterministic `VIOLATION` (`MIN_ELAPSED` failed: no `SUBMITTED` event), then escalated because `TIMING` was vote-required at the time; the policy was restored afterward |
 | `ENS-7.1` | Recorder-ingested Snapshot proposal with three sourced events |
 
 A three-minute script with exact clicks and expected copy is in
@@ -239,8 +239,9 @@ A three-minute script with exact clicks and expected copy is in
 [D4](docs/screenshots/dispute-D4-real.png),
 [ENS-7.1](docs/screenshots/proposal-ENS-7.1-real.png), the
 [browser-write smoke](docs/screenshots/browser-write-real.png), and the hosted
-[overview](docs/screenshots/vercel-overview-real.png) and
-[D1](docs/screenshots/vercel-dispute-D1-real.png).
+[overview](docs/screenshots/vercel-overview-real.png),
+[D1](docs/screenshots/vercel-dispute-D1-real.png), and
+[D5](docs/screenshots/vercel-dispute-D5-real.png).
 
 ## Testing
 
@@ -254,10 +255,10 @@ Real, current results:
 | Recorder typecheck | `npm run typecheck` | clean |
 | Recorder tests | `npm run recorder:test` | **8 passed** |
 | Frontend lint | `cd frontend && npm run lint` | clean |
-| Frontend unit tests | `cd frontend && npm test` | **14 passed** |
+| Frontend unit tests | `cd frontend && npm test` | **25 passed** |
 | Frontend e2e (mock) | `cd frontend && npx playwright test` | **10 passed**, 4 real-mode tests skipped |
 | Frontend e2e (real reads) | `cd frontend && npm run test:e2e:real` | **4 passed** against StudioNet |
-| Hosted frontend (real reads) | Playwright against `https://daoresolve.vercel.app` | overview `2 / 3 / 4`, 7 rows; D1, D4, ENS-7.1; no console errors |
+| Hosted frontend (real reads) | Playwright against `https://daoresolve.vercel.app` | paced run: overview `2 / 3 / 4`, 7 rows; D1 compliant, D5 violation, D4, ENS-7.1; no console errors |
 | Browser-wallet write | manual injected EIP-1193 provider | **1 tx FINALIZED** on the fresh deployment; proposal read back |
 | Frontend production build | `cd frontend && npm run build` | passes |
 | Deployment views | `CONTRACT_ADDRESS=… npm run verify` | 18/18 views passed on the demo address |
@@ -285,8 +286,11 @@ CI installs the matching browser instead.
 | Schema | `frontend/src/config/schema/dao_resolve.json`, `deployments/studionet.schema.json` |
 | Full records | [deployments/studionet.md](deployments/studionet.md) |
 
-Bradbury was not deployed: the available account has `0 GEN`, and the faucet is
-browser-based. StudioNet is gasless and is the demo network.
+Bradbury was not deployed. The only attempt, on 2026-10-19 with account
+`0x04e0353b7218b66d6803725ce7342e6e1225db1b` (9.93 GEN), was rejected by the node
+with `gas limit too high`; no transaction was confirmed and no funds were spent. The
+faucet is browser-based, and no later funded attempt was made. StudioNet is gasless and is
+the demo network.
 
 ## Frontend routes
 
@@ -310,10 +314,15 @@ retry, not as a verdict.
   calls `re_evaluate`. The UI exposes the permissionless action.
 - **No `list_proposals` view:** the frontend discovers proposals from
   `VITE_PROPOSAL_IDS`, and says so on the screen. Nothing is invented.
-- **Single-address roles:** the demo uses one owner account; the UI shows when all roles
-  point at the same address instead of pretending separation exists.
-- **Static hosting:** the Studio RPC needs a same-origin proxy. `frontend/server.js` and
-  the Vite config provide one.
+- **Single-address roles:** the demo uses one account for owner, registrar, and escalator,
+  with a separate recorder. The UI shows when roles point at the same address instead of
+  pretending separation exists.
+- **Static hosting:** the Studio RPC needs a same-origin proxy. `frontend/vercel.json`,
+  `frontend/server.js`, and the Vite config provide one.
+- **StudioNet rate limit:** the public RPC allows 30 requests per minute. The frontend
+  caches reads for 15 seconds, retries once, and shows a retry notice; rapid clicking can
+  still hit the limit. The hosted proxy shares Vercel egress, so this is more likely under
+  load.
 
 See [docs/threat-model.md](docs/threat-model.md) for the full findings table.
 

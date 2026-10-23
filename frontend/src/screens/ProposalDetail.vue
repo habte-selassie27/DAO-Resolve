@@ -12,7 +12,13 @@
       </div>
     </div>
 
-    <ErrorNotice v-if="error" :error="error" title="Could not load this proposal" />
+    <ErrorNotice
+      v-if="error"
+      :error="error"
+      title="Could not load this proposal"
+      retry-label="Try again"
+      @retry="load"
+    />
     <div v-if="loading" class="stack"><div class="skeleton" style="width: 60%" /><div class="skeleton" style="width: 85%" /></div>
     <template v-else-if="proposal">
       <section class="grid two">
@@ -81,8 +87,10 @@
     </template>
 
     <SheetDialog :open="showEventForm" title="Record a process event" @close="showEventForm = false">
-      <RoleGate role="recorder" title="Recording process events needs the recorder role">
-        <form @submit.prevent="submitEvent">
+      <p v-if="!state.address" class="notice system small" style="margin-bottom: 12px">
+        Connect a wallet to sign this transaction. Reads work without one.
+      </p>
+      <form @submit.prevent="submitEvent">
           <div class="notice system">
             <p class="tiny" style="margin: 0">
               Recorded events are asserted by the recorder, not independently proven by the
@@ -119,11 +127,10 @@
           </div>
           <p v-if="eventError" class="notice violation small">{{ eventError }}</p>
           <div class="row">
-            <button class="button" type="submit" :disabled="submittingEvent">{{ submittingEvent ? "Submitting…" : "Record event" }}</button>
+            <button class="button" type="submit" :disabled="submittingEvent || !state.address">{{ submittingEvent ? "Submitting…" : "Record event" }}</button>
             <button class="button secondary" type="button" @click="showEventForm = false">Cancel</button>
           </div>
         </form>
-      </RoleGate>
     </SheetDialog>
 
     <SheetDialog :open="showDisputeForm" title="Open a dispute" @close="showDisputeForm = false">
@@ -171,7 +178,6 @@ import { useRoute, useRouter } from "vue-router";
 import AddressChip from "../components/AddressChip.vue";
 import ErrorNotice from "../components/ErrorNotice.vue";
 import ProcessRail from "../components/ProcessRail.vue";
-import RoleGate from "../components/RoleGate.vue";
 import SheetDialog from "../components/SheetDialog.vue";
 import StatusChip from "../components/StatusChip.vue";
 import TrustStatement from "../components/TrustStatement.vue";
@@ -298,7 +304,7 @@ async function submitEvent() {
   }
   submittingEvent.value = true;
   try {
-    await runTransaction({
+    const result = await runTransaction({
       label: `Record ${eventForm.eventType} on ${proposalId.value}`,
       send: () =>
         recordProcessEvent({
@@ -311,7 +317,13 @@ async function submitEvent() {
         }),
       onFinalized: load,
     });
+    if (!result.ok) {
+      eventError.value = "The transaction did not finalize. Review the transaction tray and try again.";
+      return;
+    }
     showEventForm.value = false;
+  } catch (txError) {
+    eventError.value = txError?.message || "The transaction could not be submitted.";
   } finally {
     submittingEvent.value = false;
   }
@@ -335,7 +347,7 @@ async function submitDispute() {
   const disputeId = disputeForm.disputeId;
   submittingDispute.value = true;
   try {
-    await runTransaction({
+    const result = await runTransaction({
       label: `Open dispute ${disputeId}`,
       send: () =>
         openDispute({
@@ -346,7 +358,13 @@ async function submitDispute() {
         }),
       onFinalized: () => router.push(`/disputes/${disputeId}`),
     });
+    if (!result.ok) {
+      disputeError.value = "The transaction did not finalize. Review the transaction tray and try again.";
+      return;
+    }
     showDisputeForm.value = false;
+  } catch (txError) {
+    disputeError.value = txError?.message || "The transaction could not be submitted.";
   } finally {
     submittingDispute.value = false;
   }

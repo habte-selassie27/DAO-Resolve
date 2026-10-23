@@ -125,8 +125,8 @@ encoded; the CLI coercion is the issue.
 ## Network notes
 
 - **StudioNet:** gasless, deployed and verified.
-- **Bradbury:** funded account required; currently blocked by a gas-limit
-  rejection.
+- **Bradbury:** the 2026-10-19 attempt with `0x04e0…db1b` (9.93 GEN) was
+  rejected by the node with `gas limit too high`; no confirmed transaction.
 - **Asimov:** funded account required; not attempted.
 
 Never override the RPC manually. Use `genlayer network set` for built-in networks.

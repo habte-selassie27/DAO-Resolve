@@ -76,8 +76,9 @@ Open `/disputes/D3`.
 
 Open `/disputes/D5`.
 
-- It is `ESCALATED`. The record shows the deterministic assessment (`D5#a1`) and the
-  escalation reason: "TIMING category requires the DAO's own vote."
+- It is `ESCALATED`. The record shows the deterministic assessment (`D5#a1`): `VIOLATION`,
+  because `MIN_ELAPSED` failed with `missing from_event=SUBMITTED` (`P5` has no events).
+  The escalation reason is: "TIMING category requires the DAO's own vote."
 - The UI explains that terminal states accept no further actions. This is the result of the
   contract refusing to finalize a category the DAO reserved for its own vote.
 - The current demo config no longer marks `TIMING` as vote-required (it was restored after

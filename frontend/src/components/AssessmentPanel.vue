@@ -21,10 +21,10 @@
         {{ verdictCopy[assessment.verdict] || "Verdict is not recognized." }}
       </p>
 
-      <div class="notice" :class="assessment.decided_by === 'DETERMINISTIC_CHECKS' ? 'violation' : 'system'">
+      <div class="notice" :class="assessmentNoticeClass">
         <p class="small" style="margin: 0">
           <strong>{{ decidedByCopy[assessment.decided_by] || "Decision source is not recognized." }}</strong>
-          A failed rule check forces a violation in code; the model is never called to override it.
+          {{ assessmentNoticeCopy }}
         </p>
       </div>
 
@@ -94,13 +94,34 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
 import DecidedByBadge from "./DecidedByBadge.vue";
 import EmptyState from "./EmptyState.vue";
 import VerdictBadge from "./VerdictBadge.vue";
 import { decidedByCopy, emptyCopy, verdictCopy } from "../domain/copy.js";
 import { formatTime } from "../lib/format.js";
 
-defineProps({
+const props = defineProps({
   assessment: { type: Object, default: () => ({}) },
+});
+
+const assessmentNoticeClass = computed(() => {
+  if (props.assessment.decided_by !== "DETERMINISTIC_CHECKS") return "system";
+  if (props.assessment.verdict === "VIOLATION") return "violation";
+  if (props.assessment.verdict === "COMPLIANT") return "compliant";
+  return "system";
+});
+
+const assessmentNoticeCopy = computed(() => {
+  if (props.assessment.decided_by !== "DETERMINISTIC_CHECKS") {
+    return "Residual ambiguity was resolved by validator consensus. Code checks still constrain the result.";
+  }
+  if (props.assessment.verdict === "VIOLATION") {
+    return "A failed rule check forced this verdict in code; the model was never called to override it.";
+  }
+  if (props.assessment.verdict === "COMPLIANT") {
+    return "All configured rule checks passed in code; no model call was needed.";
+  }
+  return "No code check forced a violation; see the check results below.";
 });
 </script>

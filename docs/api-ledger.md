@@ -42,7 +42,7 @@ Environment on 2026-10-23:
 | StudioNet rate limit is 30 requests per minute | VERIFIED | Rapid real-mode navigation returned `Rate limit exceeded: 30 requests per minute`; reads are cached and retried, UI maps the error |
 | StudioNet endpoint is `https://studio.genlayer.com/api`, chain id `61999` | VERIFIED | Existing deployment record and `genlayer network` config |
 | Browser wallet signing | VERIFIED with an injected EIP-1193 provider; MetaMask extension untested | The owner address signed a real `register_proposal` in Chromium, the UI reached `FINALIZED`, and the contract returned the new proposal. No key is in the frontend or repo. |
-| Bradbury write path | NOT VERIFIED | Account has `0 GEN`; faucet is browser-based. StudioNet is the demo network. |
+| Bradbury write path | NOT VERIFIED | The 2026-10-19 attempt with `0x04e0…db1b` (9.93 GEN) was rejected with `gas limit too high`; no transaction was confirmed. No later funded attempt was made. StudioNet is the demo network. |
 | `getTransaction({ hash })` | VERIFIED | The browser-signed write was polled through accepted → finalized; the receipt showed five `agree` votes and the proposal read back successfully. |
 
 ## Recorder
@@ -71,7 +71,7 @@ Live recorder transactions:
 | Mock mode uses fixtures and simulated lifecycle, never the network | VERIFIED | 10 Playwright tests with `VITE_MOCK=1` |
 | Real mode reads the deployed contract through a same-origin proxy | VERIFIED | `npm run test:e2e:real` -> 4 passed (overview, D1, D4, ENS-7.1); earlier manual run rendered metrics `2 / 3 / 4`, 7 rows, no page errors |
 | Full write lifecycle with a real wallet | VERIFIED with an injected EIP-1193 provider | Browser test connected the owner address, signed `register_proposal`, showed submitted → consensus → finalized, and the contract read the new proposal. The MetaMask extension UX is still untested. |
-| Hosted frontend URL | VERIFIED | <https://daoresolve.vercel.app> (Vercel project `daoresolve`, production). Playwright real reads on 2026-10-23: overview metrics `2 / 3 / 4`, 7 rows, D1, D4, ENS-7.1, no console errors. |
+| Hosted frontend URL | VERIFIED | <https://daoresolve.vercel.app> (Vercel project `daoresolve`, production). Paced Playwright real reads on 2026-10-23: overview metrics `2 / 3 / 4`, 7 rows, D1, D4, ENS-7.1, no console errors. |
 | Vercel `/api` rewrite is same-origin | VERIFIED | `frontend/vercel.json`; `POST https://daoresolve.vercel.app/api` returned `200` with `{"result":"0xf22f"}` and a real `get_config` read succeeded. The exact `/api` rule avoids Studio's trailing-slash redirect. |
 
 ## Sources

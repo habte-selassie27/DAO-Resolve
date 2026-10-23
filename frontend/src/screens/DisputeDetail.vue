@@ -20,7 +20,13 @@
       </div>
     </div>
 
-    <ErrorNotice v-if="error" :error="error" title="Could not load this dispute" />
+    <ErrorNotice
+      v-if="error"
+      :error="error"
+      title="Could not load this dispute"
+      retry-label="Try again"
+      @retry="load"
+    />
     <div v-if="loading" class="stack"><div class="skeleton" style="width: 65%" /><div class="skeleton" style="width: 88%" /><div class="skeleton" style="width: 75%" /></div>
     <template v-else-if="dispute">
       <FinalityBanner

@@ -111,7 +111,7 @@ finality could be observed inside the session. The window was restored to the
 | 31 | `set_category_vote_required` | `TIMING true` | ACCEPTED | `0xe779fd062674d14cf8355be2870f69b1b431109aa95b03b3fef04d795ac3fee6` |
 | 32 | `register_proposal` | `P5` | ACCEPTED | `0xa92dfba4c19f3bacb35edd3941476ff3f2c58c132f7d86e5bb3481125a21de2d` |
 | 33 | `open_dispute` | `D5` on `R1` (TIMING) | ACCEPTED | `0xc7beeadfdedf415520316e29ac1a8b235f6394c885490fdd75aafc9e62ddec11` |
-| 34 | `evaluate_dispute` | `D5` (deterministic) | ACCEPTED, `COMPLIANT` | `0xdb3bb257d70c87c59377232f172bef7b6b81b1623b288047fa90fd50893675dd` |
+| 34 | `evaluate_dispute` | `D5` (deterministic) | ACCEPTED, `VIOLATION` (`missing from_event=SUBMITTED`) | `0xdb3bb257d70c87c59377232f172bef7b6b81b1623b288047fa90fd50893675dd` |
 | 35 | `finalize_dispute` | `D5` in a vote-required category | **blocked** — `EXPECTED: category requires escalation to the DAO procedure` | `0x9deb9ad4ecf46f27444c416de9c78998bae3efc236f7f57665e0c83ed98af9ec` |
 | 36 | `escalate_dispute` | `D5` | ACCEPTED → `ESCALATED` | `0xf6c2a1574997537860cf515f7821fa2f7f50001ef8b4097345bad10ac59815f5` |
 | 37 | `finalize_dispute` | `D4` after the window | ACCEPTED → `FINALIZED` | `0xcd0a14526d5733278b82a9fb7bebaf8a9fec8bda030372eeb17978c6b9f7e0fc` |
@@ -144,7 +144,8 @@ D1#a1  verdict=COMPLIANT     decided_by=DETERMINISTIC_CHECKS  produced_by=EVALUA
 D1#a2  verdict=COMPLIANT     decided_by=DETERMINISTIC_CHECKS  produced_by=RE_EVALUATION
 D4#a1  verdict=INCONCLUSIVE  decided_by=INTERPRETATION        produced_by=EVALUATION
 D4#a2  verdict=INCONCLUSIVE  decided_by=INTERPRETATION        produced_by=RE_EVALUATION
-D5#a1  verdict=COMPLIANT     decided_by=DETERMINISTIC_CHECKS  produced_by=EVALUATION
+D5#a1  verdict=VIOLATION     decided_by=DETERMINISTIC_CHECKS  produced_by=EVALUATION
+        detail: MIN_ELAPSED FAIL, missing from_event=SUBMITTED
 ```
 
 `D4#a1` cited only the clause (`cited_evidence_ids: []`) and recorded
@@ -242,6 +243,8 @@ above.
 | Consensus + challenge round trip | `0x36a8364e5908aB59Fd3b228e47debca67B35B67F` |
 | Deterministic end-to-end | `0x257cb6E8c4c4B76F1654f48216922fCE5C946833` |
 | Invalid transition | `0xCc6a57397718A11916C9E36Cd30AC34E82C5482D` |
+
+2026-10-20 run:
 
 | Test | Contract address |
 |---|---|
@@ -549,15 +552,16 @@ JSON-RPC results.
 |---|---|
 | Live URL | <https://daoresolve.vercel.app> |
 | Vercel project | `daoresolve` under `habteselassies-projects` |
-| Production deployment | `dpl_3Diz8bYmaA9Cku5vEGdbXv5cjSom` |
+| Production deployment | `dpl_6QBeKa7rbGsB3bCNma2ndTJuWjrG` (final build after review and resilience fixes) |
 | Build | `npm run build` (Vite) |
 | Proxy check | `POST /api` with `eth_chainId` -> `200`, `{"jsonrpc":"2.0","result":"0xf22f","id":1}` |
 | Contract read | Hosted `/api` returned `owner`, `challenge_window`, and `recorder` from the demo contract |
-| Browser check | Overview metrics `2 / 3 / 4`, 7 rows, no alerts; `D1` (`RE_EVALUATED`, `Rule check`), `D4` (`Finalized record`), and `ENS-7.1` (recorder events) all read successfully |
-| Console | No page or console errors during the hosted run |
+| Browser check | Overview metrics `2 / 3 / 4`, 7 rows, no alerts; `D1` (`RE_EVALUATED`, compliant notice, zero violation notices), `D5` (`VIOLATION`, one violation notice, `missing from_event=SUBMITTED`), `D4` (`Finalized record`), and `ENS-7.1` (recorder events) all read successfully |
+| Console | No page or console errors during the paced hosted read run |
 
-Screenshots: [docs/screenshots/vercel-overview-real.png](../docs/screenshots/vercel-overview-real.png)
-and [docs/screenshots/vercel-dispute-D1-real.png](../docs/screenshots/vercel-dispute-D1-real.png).
+Screenshots: [docs/screenshots/vercel-overview-real.png](../docs/screenshots/vercel-overview-real.png),
+[docs/screenshots/vercel-dispute-D1-real.png](../docs/screenshots/vercel-dispute-D1-real.png), and
+[docs/screenshots/vercel-dispute-D5-real.png](../docs/screenshots/vercel-dispute-D5-real.png).
 
 The browser-write screenshot was taken from the Vite dev server pointed at the fresh
 deployment. Preview Vercel deployments are protected by Vercel Authentication; the
