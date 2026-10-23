@@ -73,9 +73,15 @@ Open `/disputes/D3`.
 
 Open `/disputes/D5`.
 
-- `TIMING` was marked vote-required when this dispute was created. The UI says
-  **finalize blocked: category requires DAO escalation**.
-- The finalize action is not offered; escalation is.
+- It is `ESCALATED`. The record shows the deterministic assessment (`D5#a1`) and the
+  escalation reason: "TIMING category requires the DAO's own vote."
+- The UI explains that terminal states accept no further actions. This is the result of the
+  contract refusing to finalize a category the DAO reserved for its own vote.
+- The current demo config no longer marks `TIMING` as vote-required (it was restored after
+  the setup run), so this is a historical record. To reproduce the blocked-finalize path
+  live, the owner would mark a category vote-required, open a new dispute in it, evaluate,
+  and show that `Finalize dispute` is absent while escalation is available. Do not change
+  config during a recorded demo unless that is the point of the segment.
 
 Talking point: the contract refuses to pretend it can finalize a category the DAO reserves
 for its own vote.

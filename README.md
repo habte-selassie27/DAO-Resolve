@@ -225,7 +225,7 @@ frontend and captured in [docs/screenshots](docs/screenshots)):
 | `D1` | Deterministic `COMPLIANT`, challenged, re-evaluated; `decided_by = DETERMINISTIC_CHECKS` |
 | `D4` | Real validator consensus, `INCONCLUSIVE`, challenged with new evidence, re-evaluated, finalized |
 | `D3` | Escalated to the DAO's own procedure |
-| `D5` | Deterministic assessment; finalize blocked because the category requires escalation |
+| `D5` | Deterministic assessment, then escalated because `TIMING` was vote-required at the time; the policy was restored afterward |
 | `ENS-7.1` | Recorder-ingested Snapshot proposal with three sourced events |
 
 A three-minute script with exact clicks and expected copy is in
