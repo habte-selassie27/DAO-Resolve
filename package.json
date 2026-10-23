@@ -1,0 +1,20 @@
+{
+  "name": "daoresolve",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "bash scripts/deploy.sh",
+    "seed": "tsx scripts/seed_demo.ts",
+    "verify": "tsx scripts/verify_deployment.ts",
+    "recorder": "tsx recorder/src/cli.ts",
+    "recorder:test": "tsx --test recorder/tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run recorder:test"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "genlayer-js": "^1.1.8",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

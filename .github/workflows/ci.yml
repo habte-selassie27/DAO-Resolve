@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: Contract lint and direct tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Lint contract
+        run: genvm-lint check contracts/dao_resolve.py --json
+      - name: Direct tests (mocked web and LLM)
+        run: pytest tests/direct/ -q
+
+  recorder:
+    name: Recorder tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run recorder:test
+
+  frontend:
+    name: Frontend tests, build, and e2e
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+
+  # Integration tests use real consensus and the public StudioNet endpoint. They are
+  # intentionally not on every push: they are slow, rate-limited, and need a funded
+  # account for public testnets. Run locally or with workflow_dispatch:
+  #
+  #   gltest tests/integration/ -v -s --network studionet

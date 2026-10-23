@@ -1,0 +1,47 @@
+{
+  "plan_version": 1,
+  "source": "snapshot",
+  "source_url": "https://snapshot.box/#/s:ens.eth/proposal/0x943e585d1a4996525c5c7d229401d604ea56fe08c2c9c615c44f048ba42487b7",
+  "fetched_at": "2026-10-23T08:55:42.967Z",
+  "proposal": {
+    "proposal_id": "ENS-7.1",
+    "title": "[7.1] [Social] SPP3: Marketplace RFP",
+    "space": "ens.eth"
+  },
+  "actor_basis": "snapshot_author",
+  "warnings": [
+    "Contract proposal id ENS-7.1 maps to Snapshot proposal 0x943e585d1a4996525c5c7d229401d604ea56fe08c2c9c615c44f048ba42487b7.",
+    "Voting events use the proposal author as the actor because no --actor was supplied. Pass --actor to name the governance actor."
+  ],
+  "events": [
+    {
+      "event_id": "submitted",
+      "event_type": "SUBMITTED",
+      "actor": "0x1D5460F896521aD685Ea4c3F2c679Ec0b6806359",
+      "timestamp_ref": 1783988115,
+      "evidence_ref": "https://snapshot.box/#/s:ens.eth/proposal/0x943e585d1a4996525c5c7d229401d604ea56fe08c2c9c615c44f048ba42487b7"
+    },
+    {
+      "event_id": "voting-started",
+      "event_type": "VOTING_STARTED",
+      "actor": "0x1D5460F896521aD685Ea4c3F2c679Ec0b6806359",
+      "timestamp_ref": 1783988115,
+      "evidence_ref": "https://snapshot.box/#/s:ens.eth/proposal/0x943e585d1a4996525c5c7d229401d604ea56fe08c2c9c615c44f048ba42487b7"
+    },
+    {
+      "event_id": "voting-ended",
+      "event_type": "VOTING_ENDED",
+      "actor": "0x1D5460F896521aD685Ea4c3F2c679Ec0b6806359",
+      "timestamp_ref": 1784420115,
+      "evidence_ref": "https://snapshot.box/#/s:ens.eth/proposal/0x943e585d1a4996525c5c7d229401d604ea56fe08c2c9c615c44f048ba42487b7"
+    }
+  ],
+  "raw_fields_used": {
+    "id": "0x943e585d1a4996525c5c7d229401d604ea56fe08c2c9c615c44f048ba42487b7",
+    "created": 1783988115,
+    "start": 1783988115,
+    "end": 1784420115,
+    "state": "closed",
+    "author": "0x1D5460F896521aD685Ea4c3F2c679Ec0b6806359"
+  }
+}

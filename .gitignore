@@ -32,9 +32,16 @@ secrets/
 
 # Generated build and test artifacts
 artifacts/
+node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+frontend/.env.local
+frontend/.env.*.local
 
 # Generated deployment artifacts
 deployments/*.json
+!deployments/studionet.schema.json
 deployments/*.log
 
 # Editors and OS
