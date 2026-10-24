@@ -140,7 +140,9 @@ def test_deprecate_unknown_rule_rejected(dao):
         dao.deprecate_rule("NOPE")
 
 
-def test_rule_registrar_role_is_required(dao, bob, charlie, direct_vm, direct_alice):
+def test_rule_registration_requires_registrar_and_deprecation_stays_gated(
+    dao, bob, charlie, direct_vm, direct_alice
+):
     direct_vm.sender = direct_alice
     dao.set_role("RULE_REGISTRAR", bob)
 
@@ -153,6 +155,11 @@ def test_rule_registrar_role_is_required(dao, bob, charlie, direct_vm, direct_al
     direct_vm.sender = bob
     add_rule(dao)
     assert dao.get_rule("R1")["version"] == 1
+
+    # A non-registrar cannot deprecate it.
+    direct_vm.sender = charlie
+    with pytest.raises(Exception, match="EXPECTED: caller is not authorized"):
+        dao.deprecate_rule("R1")
 
     # Owner retains authority even after delegating.
     direct_vm.sender = direct_alice

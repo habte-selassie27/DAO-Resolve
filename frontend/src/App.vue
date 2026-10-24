@@ -23,7 +23,10 @@
           No wallet or network is touched. Set <code>VITE_MOCK=0</code> to use the deployed contract.
         </p>
       </div>
-      <RouterView />
+      <!-- Keyed by path so each proposal/dispute screen remounts fresh: drafts
+           and local state are bound per entity id and never leak between
+           entities when only the route parameter changes. -->
+      <RouterView :key="$route.fullPath" />
     </main>
 
     <footer style="border-top: 1px solid var(--line); padding: 20px 24px 28px">

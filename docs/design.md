@@ -3,8 +3,8 @@
 ## 1. Purpose
 
 DAOResolve is a reusable dispute-adjudication primitive for DAOs. A DAO publishes
-its governance rules, authorized recorders log proposal process events, and
-participants can dispute whether a proposal or governance action complied with a
+its governance rules, any participant can register a proposal and append process events,
+and participants can dispute whether a proposal or governance action complied with a
 specific rule version.
 
 The output is an **assessment against the registered rule**, not a legal ruling
@@ -29,7 +29,7 @@ meaning of a constrained verdict.
 
 The contract is implemented in `contracts/dao_resolve.py` (1,463 lines),
 lint-clean, and covered by 171 passing direct tests. The official StudioNet
-deployment is `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`, whose stored code is
+deployment is `0x151af6e00e1250Af44B8be1a14eb743C9613A41A`, whose stored code is
 byte-identical to the working file (SHA-256 `f0a4abc1…`). Every read and write
 method has been exercised on that instance, including a dispute that reached
 `FINALIZED` and one that was escalated after a vote-required category blocked
@@ -70,7 +70,7 @@ Rule registry
 
 Proposal event log
   - proposal record
-  - append-only process events from authorized recorders
+  - append-only process events from any wallet; each event records its signer
 
 Dispute lifecycle
   - rule pinning

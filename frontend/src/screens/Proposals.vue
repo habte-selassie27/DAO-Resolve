@@ -4,8 +4,8 @@
       <div>
         <h1>Proposals</h1>
         <p class="muted" style="margin: 0">
-          Proposals are the anchor for process events. A dispute points at one proposal and one
-          pinned rule version.
+          Proposals are the anchor for process events. Anyone can register one; the contract
+          records the signer. A dispute points at one proposal and one pinned rule version.
         </p>
       </div>
       <button class="button" type="button" @click="showForm = true">Register a proposal</button>
@@ -86,6 +86,9 @@ import { formatTime } from "../lib/format.js";
 import { listProposals } from "../lib/chain/reads.js";
 import { registerProposal } from "../lib/chain/writes.js";
 import { runTransaction } from "../lib/chain/tx.js";
+import { bindFormDraft } from "../lib/formPersistence.js";
+
+const PROPOSAL_FORM_DEFAULTS = { proposalId: "", contentRef: "", statusNote: "" };
 
 const proposals = ref([]);
 const loading = ref(true);
@@ -93,7 +96,10 @@ const error = ref("");
 const showForm = ref(false);
 const submitting = ref(false);
 const formError = ref("");
-const form = reactive({ proposalId: "", contentRef: "", statusNote: "" });
+const form = reactive({ ...PROPOSAL_FORM_DEFAULTS });
+// Draft persists across reloads and hard refreshes so a rejected wallet
+// signature never loses the entered proposal.
+const formDraft = bindFormDraft("proposal:register", form, PROPOSAL_FORM_DEFAULTS);
 
 function safeUrl(value) {
   try {
@@ -139,7 +145,7 @@ async function submit() {
       return;
     }
     showForm.value = false;
-    Object.assign(form, { proposalId: "", contentRef: "", statusNote: "" });
+    formDraft.reset();
   } catch (txError) {
     formError.value = txError?.message || "The transaction could not be submitted.";
   } finally {

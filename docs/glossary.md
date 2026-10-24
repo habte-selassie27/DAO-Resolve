@@ -38,8 +38,8 @@ operations under validator consensus.
 **Pinned rule version** — The `rule_id` and `rule_version` stored in a dispute
 when it is opened. Later rule edits do not change it.
 
-**Process event** — An append-only record supplied by an authorized recorder,
-such as a submission or a review completion.
+**Process event** — An append-only record that any wallet can submit, such as a
+submission or a review completion. The contract stores the signer as `recorded_by`.
 
 **Rule** — A natural-language governance clause registered by the DAO, optionally
 with deterministic structured checks.

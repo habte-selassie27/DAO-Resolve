@@ -8,13 +8,13 @@ current source:
 | Item | Value |
 |---|---|
 | Contract | `contracts/dao_resolve.py` (1,463 lines) |
-| Source SHA-256 | `f0a4abc1812e8d37354baee25ffcf40d47fb70a577003a2099cefd7e1636fe6a` |
-| Address | `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` |
-| Deploy transaction | `0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f` |
+| Source SHA-256 | `8b5948bccdfcd6786bf89262e8e0fd6f31374df035a6ea725117c07e09eb1417` |
+| Address | `0x151af6e00e1250Af44B8be1a14eb743C9613A41A` |
+| Deploy transaction | `0xb138073ad159cd0e78070490d3d3d9e74ecab2e0ebcf62b5e92680661f29743d` |
 | Deploy status | `FINALIZED` (execution mode `NORMAL`, 5 validators) |
 | Owner | `0x5B3661C576c7001e6d6279C67F3779705d334c89` |
-| Explorer | https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb |
-| Studio import | https://studio.genlayer.com/?import-contract=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb |
+| Explorer | https://explorer-studio.genlayer.com/address/0x151af6e00e1250Af44B8be1a14eb743C9613A41A |
+| Studio import | https://studio.genlayer.com/?import-contract=0x151af6e00e1250Af44B8be1a14eb743C9613A41A |
 | Schema | `deployments/studionet.schema.json` (28 methods; older `.txt` retained) |
 
 The complete record, including write transactions and read outputs, is in
@@ -35,7 +35,7 @@ deprecated by that exercise and `R2` remains active.
 **2026-10-23 update:** the current source was redeployed fresh to prove the pinned runner
 is accepted by StudioNet: `0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e`, deploy tx
 `0xc500a18432b27137ff002628b939d01d5287fe8ac3785ea88dbdb1dd846dd2c9`, `FINALIZED` with
-`MAJORITY_AGREE`. The demo contract's recorder role is now a separate address
+`MAJORITY_AGREE`. The demo contract keeps a recorder role for the CLI, but event registration is open
 (`0x84a0cB58d217b08ed95b540b7D3ABdC5bBA3443C`), and the ENS recorder plan is on chain.
 The deployable frontend is `frontend/`; it needs a same-origin `/api` proxy to StudioNet
 (Vite dev server and `frontend/server.js` provide it). See

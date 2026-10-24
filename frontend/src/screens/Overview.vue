@@ -84,8 +84,9 @@
           <span class="chip">1 · process</span>
           <h3 style="margin-top: 8px">Record what happened</h3>
           <p class="small muted">
-            An authorized recorder logs events such as SUBMITTED or VOTING_STARTED, each with a
-            timestamp and a public source link. Unsourced events are marked, not hidden.
+            Anyone can register a proposal and append events such as SUBMITTED or
+            VOTING_STARTED. Each event records the signer, a timestamp, and a public source
+            link; unsourced events are marked, not hidden.
           </p>
         </div>
         <div>

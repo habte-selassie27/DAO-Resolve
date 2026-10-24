@@ -61,13 +61,14 @@ clearly labelled and never touches the network.
   consensus, and finalized states, and the contract returned the new proposal. The
   MetaMask extension UX itself is still untested.
 - Contract lint is clean, 171 direct tests pass, 3 integration tests passed under real
-  consensus, recorder typecheck and 8 recorder tests pass, frontend lint and 25 unit tests
+  consensus, recorder typecheck and 8 recorder tests pass, frontend lint and 33 unit tests
   pass, and 10 mock-mode e2e tests pass.
 
 **Trusted:**
 
-- Process events are recorded by an authorized recorder and link to a public source. The
-  contract does not independently prove the event happened.
+- Proposals and process events can be submitted by any wallet; each event records the
+  signer and links to a public source. The contract does not independently prove the event
+  happened.
 - Evidence sides are self-declared. A label is not identity verification.
 - Validators fetch evidence live, but the contract cannot prove that readable content is
   true. A wrong verdict shared by every validator remains possible.
@@ -80,8 +81,8 @@ clearly labelled and never touches the network.
 - Live demo frontend: <https://daoresolve.vercel.app>
 - Hosting: Vercel static build with a same-origin `/api` rewrite to StudioNet
   (`frontend/vercel.json`). `frontend/server.js` remains the self-hosted equivalent.
-- Demo contract: [`0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`](https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb)
-- Deploy transaction: [`0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f`](https://explorer-studio.genlayer.com/tx/0xa99453271c7139fcdda8480e6050ae8bd623b55f9dc5020a755c610227cf146f)
+- Demo contract: [`0x151af6e00e1250Af44B8be1a14eb743C9613A41A`](https://explorer-studio.genlayer.com/address/0x151af6e00e1250Af44B8be1a14eb743C9613A41A)
+- Deploy transaction: [`0xb138073ad159cd0e78070490d3d3d9e74ecab2e0ebcf62b5e92680661f29743d`](https://explorer-studio.genlayer.com/tx/0xb138073ad159cd0e78070490d3d3d9e74ecab2e0ebcf62b5e92680661f29743d)
 - Fresh smoke deployment (current source, pinned runner): [`0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e`](https://explorer-studio.genlayer.com/address/0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e)
 - Browser-wallet smoke write on the fresh deployment:
   [`register_proposal`](https://explorer-studio.genlayer.com/tx/0x23cc5d6ea3d358bdbb5389353c9efd98bccbab987dc7520d77452ee361e6e2e4)
@@ -102,7 +103,7 @@ python3.12 -m pytest tests/direct/ -q
 171 passed
 
 gltest tests/integration/ -v -s --network studionet
-3 passed in 261.76s
+3 passed in 209.37s
 
 npm run typecheck
 clean
@@ -114,7 +115,7 @@ cd frontend && npm run lint
 clean
 
 cd frontend && npm test
-25 passed
+33 passed
 
 cd frontend && npx playwright test
 10 passed, 4 real-mode tests skipped
@@ -126,7 +127,7 @@ cd frontend && npm run test:e2e:real
 Playwright https://daoresolve.vercel.app (paced)
 overview 2 / 3 / 4, 7 rows; D1 compliant, D5 violation, D4, ENS-7.1; no console errors
 
-CONTRACT_ADDRESS=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb npm run verify
+CONTRACT_ADDRESS=0x151af6e00e1250Af44B8be1a14eb743C9613A41A npm run verify
 18/18 configured views passed
 ```
 

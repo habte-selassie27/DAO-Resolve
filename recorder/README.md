@@ -73,8 +73,8 @@ started. If a source lacks a field, the event is skipped and a warning is writte
 
 Events are sent one at a time with `record_process_event` and the recorder waits for each
 to finalize. On the first failure it stops, reports the contract error, and names the last
-confirmed event. It never logs the private key. The recorder account must hold the
-`RECORDER` role (or be the owner).
+confirmed event. It never logs the private key. The recorder account signs the writes;
+the contract does not require the `RECORDER` role for event registration.
 
 ## Tests
 

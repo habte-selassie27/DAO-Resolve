@@ -6,7 +6,7 @@
 |---|---|
 | Owner | Set policy, assign roles, transfer ownership, act as any role |
 | Rule registrar | Register, version, and deprecate rules |
-| Recorder | Register proposals and append process events |
+| Recorder (optional) | Designated signer for the recorder CLI; the contract does not require this role to register proposals or append events |
 | Escalation role | Escalate a dispute to the DAO's own procedure |
 
 The owner is set at deployment and initialized into all three functional roles.
@@ -23,8 +23,8 @@ role.
 | `set_category_vote_required` | yes | — | — | — | — |
 | `register_rule` | yes | yes | — | — | — |
 | `deprecate_rule` | yes | yes | — | — | — |
-| `register_proposal` | yes | — | yes | — | — |
-| `record_process_event` | yes | — | yes | — | — |
+| `register_proposal` | yes | — | any | any | — |
+| `record_process_event` | yes | — | any | any | — |
 | `open_dispute` | yes | — | — | yes* | — |
 | `submit_evidence` | yes | — | — | yes* | — |
 | `evaluate_dispute` | yes | — | — | yes* | — |
@@ -62,9 +62,9 @@ version is published. This keeps historical assessments reproducible.
 
 ## Trust assumptions
 
-- **Recorders are trusted** to record process events honestly. The contract
-  checks authorization, shape, ordering, and bounds; it does not verify that an
-  event happened in the real world.
+- **Event writers are untrusted in the real-world sense.** Any wallet can register a
+  proposal or append an event. The contract checks shape, ordering, and bounds and records
+  the signer; it does not verify that the event happened in the real world.
 - **Rule registrars are trusted** to publish the rules the DAO intends to use.
   The contract enforces versions and deprecation but cannot verify that a clause
   matches an off-chain governance document.

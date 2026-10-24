@@ -58,7 +58,7 @@ Events are stored per proposal in a separate `TreeMap[str, DynArray[ProcessEvent
 
 ## ProcessEvent
 
-An event supplied by an authorized recorder.
+An event submitted by any wallet; the contract stores the signer as `recorded_by`.
 
 | Field | Type | Notes |
 |---|---|---|

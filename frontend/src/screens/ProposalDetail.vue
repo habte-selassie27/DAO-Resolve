@@ -66,7 +66,8 @@
           <div>
             <h2 style="margin: 0">Process rail</h2>
             <p class="small muted" style="margin: 2px 0 0">
-              The recorded sequence of events, with each event's source. Checks are previewed
+              The recorded sequence of events, with each event's source and signer. Any wallet can
+              append an event; the contract attributes it to the signer. Checks are previewed
               against the selected rule; the authoritative result appears in the dispute assessment.
             </p>
           </div>
@@ -186,6 +187,7 @@ import { getAllEvents, getProposal, getRule, listActiveRules, listDisputes } fro
 import { openDispute, recordProcessEvent } from "../lib/chain/writes.js";
 import { runTransaction } from "../lib/chain/tx.js";
 import { state } from "../lib/store.js";
+import { bindFormDraft } from "../lib/formPersistence.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -207,19 +209,26 @@ const disputeError = ref("");
 
 const eventTypes = ["SUBMITTED", "REVIEW_STARTED", "DISCUSSION_OPENED", "REVIEW_COMPLETED", "VOTING_STARTED", "VOTING_ENDED", "EXECUTED", "CANCELLED"];
 
-const eventForm = reactive({
-  eventId: "",
-  eventType: "VOTING_STARTED",
-  actor: "",
-  timestampLocal: toLocalInput(new Date()),
-  evidenceRef: "",
-});
+function eventFormDefaults() {
+  return {
+    eventId: "",
+    eventType: "VOTING_STARTED",
+    actor: "",
+    timestampLocal: toLocalInput(new Date()),
+    evidenceRef: "",
+  };
+}
 
-const disputeForm = reactive({
-  disputeId: "",
-  ruleKey: "",
-  claimText: "",
-});
+function disputeFormDefaults() {
+  return { disputeId: "", ruleKey: "", claimText: "" };
+}
+
+const eventForm = reactive(eventFormDefaults());
+const disputeForm = reactive(disputeFormDefaults());
+// Drafts are keyed per proposal so fresh records never inherit another
+// proposal's entry; they survive reloads and rejected signatures.
+const eventFormDraft = bindFormDraft(`proposal:${route.params.proposalId}:event`, eventForm, eventFormDefaults);
+const disputeFormDraft = bindFormDraft(`proposal:${route.params.proposalId}:dispute`, disputeForm, disputeFormDefaults);
 
 function toLocalInput(date) {
   const offset = date.getTimezoneOffset() * 60000;
@@ -322,6 +331,7 @@ async function submitEvent() {
       return;
     }
     showEventForm.value = false;
+    eventFormDraft.reset();
   } catch (txError) {
     eventError.value = txError?.message || "The transaction could not be submitted.";
   } finally {
@@ -363,6 +373,9 @@ async function submitDispute() {
       return;
     }
     showDisputeForm.value = false;
+    // The dispute now exists on chain; clear its draft so returning here
+    // starts a fresh claim instead of resubmitting the same id.
+    disputeFormDraft.reset();
   } catch (txError) {
     disputeError.value = txError?.message || "The transaction could not be submitted.";
   } finally {

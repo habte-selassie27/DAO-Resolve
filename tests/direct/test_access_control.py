@@ -23,24 +23,32 @@ def test_owner_only_methods_reject_non_owner(dao, bob, direct_vm):
         dao.set_category_vote_required("TIMING", True)
 
 
-def test_rule_registrar_requires_role(dao, bob, charlie, direct_vm):
+def test_rule_registration_requires_registrar_or_owner(
+    dao, alice, bob, charlie, direct_vm
+):
+    # Rules are the judging standard: only the owner or the assigned registrar
+    # may create one.
     direct_vm.sender = bob
     with pytest.raises(Exception, match="EXPECTED: caller is not authorized"):
         add_rule(dao)
+
+    direct_vm.sender = alice
+    add_rule(dao)
+    assert dao.get_rule("R1")["version"] == 1
+
+    # Deprecation is gated to the rule registrar / owner as well.
     direct_vm.sender = charlie
     with pytest.raises(Exception, match="EXPECTED: caller is not authorized"):
         dao.deprecate_rule("R1")
-    # Nothing was created.
-    with pytest.raises(Exception, match="EXPECTED: unknown rule"):
-        dao.get_rule("R1")
 
 
-def test_recorder_requires_role(dao, bob, direct_vm):
+def test_proposal_and_event_recording_are_open(dao, bob, direct_vm):
+    # Creation is permissionless: any wallet can register a proposal and
+    # append process events.
     direct_vm.sender = bob
-    with pytest.raises(Exception, match="EXPECTED: caller is not authorized"):
-        add_proposal(dao)
-    with pytest.raises(Exception, match="EXPECTED: caller is not authorized"):
-        dao.record_process_event("P1", "e1", "SUBMITTED", bob, 1000, "")
+    add_proposal(dao)
+    dao.record_process_event("P1", "e1", "SUBMITTED", bob, 1000, "")
+    assert dao.get_proposal("P1")["event_count"] == 1
 
 
 def test_escalator_requires_role(dao, alice, bob, direct_vm):
@@ -202,16 +210,17 @@ def test_category_vote_required_validation(dao):
 
 
 def test_zero_role_address_revokes(dao, alice, bob, direct_vm, module):
+    # Role revocation still gates the privileged methods (deprecation here).
     direct_vm.sender = alice
-    dao.set_role("RECORDER", bob)
+    dao.set_role("RULE_REGISTRAR", bob)
     direct_vm.sender = bob
-    add_proposal(dao)
+    add_rule(dao)
 
     direct_vm.sender = alice
-    dao.set_role("RECORDER", module.ZERO_ADDRESS)
+    dao.set_role("RULE_REGISTRAR", module.ZERO_ADDRESS)
     direct_vm.sender = bob
     with pytest.raises(Exception, match="EXPECTED: caller is not authorized"):
-        add_proposal(dao, proposal_id="P2")
+        dao.deprecate_rule("R1")
 
 
 def test_get_config_reports_limits(dao):

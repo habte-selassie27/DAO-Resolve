@@ -8,7 +8,7 @@ challengeable, and clearly labelled as advisory.
 Live demo: <https://daoresolve.vercel.app>
 
 Live contract on StudioNet:
-[`0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb`](https://explorer-studio.genlayer.com/address/0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb)
+[`0x151af6e00e1250Af44B8be1a14eb743C9613A41A`](https://explorer-studio.genlayer.com/address/0x151af6e00e1250Af44B8be1a14eb743C9613A41A)
 
 ---
 
@@ -61,9 +61,10 @@ not a penalty, and not enforcement.**
 
 ## How a verdict is made
 
-1. **Process record.** An authorized recorder logs events such as `SUBMITTED`,
+1. **Process record.** Anyone can register a proposal and append events such as `SUBMITTED`,
    `DISCUSSION_OPENED`, or `VOTING_STARTED`, each with integer UNIX seconds and an
-   `evidence_ref` to the authoritative public source.
+   `evidence_ref` to the authoritative public source. The contract attributes each event to
+   the wallet that recorded it; it does not verify that the event happened.
 2. **Deterministic checks.** `MIN_ELAPSED`, `REQUIRED_EVENT`, `MIN_COUNT`, and
    `REQUIRED_ROLE` run in plain code against the recorded events. One failed check forces
    `VIOLATION`; the model is never called. `DETERMINISTIC_ONLY` rules stop here.
@@ -81,9 +82,10 @@ Full split: [docs/design.md](docs/design.md) and [docs/equivalence.md](docs/equi
 
 ## Honest trust statement
 
-> Process events are recorded by an authorized recorder and link to their public source.
-> Validators read evidence URLs live. The contract does not independently prove that a
-> recorded event happened unless on-chain event verification is enabled for that rule.
+> Proposals and process events can be submitted by any wallet; each event records the
+> signer and links to a public source. Validators read evidence URLs live. The contract does
+> not independently prove that a recorded event happened unless on-chain event verification
+> is enabled for that rule.
 
 Additional limits that are visible in the UI:
 
@@ -94,9 +96,10 @@ Additional limits that are visible in the UI:
   that readable content is true.
 - A wrong verdict that every validator shares is still possible. Consensus is a safety
   mechanism, not omniscience.
-- Process events asserted by a single recorder are only as trustworthy as that recorder and
-  its sources. Strict separation can block recorders from participating, but it does not
-  verify the event itself.
+- Process events are self-asserted by the wallet that recorded them. The UI shows the
+  signer and source, but the contract does not verify that the event happened. Strict
+  separation can block that signer from later participating, but it does not verify
+  the event itself.
 - Assessments are advisory. They never execute, cancel, or reverse governance actions.
 
 ## Architecture
@@ -164,11 +167,11 @@ npm run recorder -- ingest snapshot \
   --proposal-id ENS-7.1
 
 # Inspect the plan under recorder/logs/ENS-7.1.json, then send it:
-CONTRACT_ADDRESS=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb \
+CONTRACT_ADDRESS=0x151af6e00e1250Af44B8be1a14eb743C9613A41A \
 RECORDER_PRIVATE_KEY=0x… \
 npm run recorder -- submit recorder/logs/ENS-7.1.json
 
-CONTRACT_ADDRESS=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb \
+CONTRACT_ADDRESS=0x151af6e00e1250Af44B8be1a14eb743C9613A41A \
 npm run recorder -- verify recorder/logs/ENS-7.1.json
 ```
 
@@ -227,7 +230,7 @@ frontend and captured in [docs/screenshots](docs/screenshots)):
 | Case | What it shows |
 |---|---|
 | `D1` | Deterministic `COMPLIANT`, challenged, re-evaluated; `decided_by = DETERMINISTIC_CHECKS` |
-| `D4` | Real validator consensus, `INCONCLUSIVE`, challenged with new evidence, re-evaluated, finalized |
+| `D4` | Real validator consensus, `INCONCLUSIVE`, finalized after the challenge window |
 | `D3` | Escalated to the DAO's own procedure |
 | `D5` | Deterministic `VIOLATION` (`MIN_ELAPSED` failed: no `SUBMITTED` event), then escalated because `TIMING` was vote-required at the time; the policy was restored afterward |
 | `ENS-7.1` | Recorder-ingested Snapshot proposal with three sourced events |
@@ -251,11 +254,11 @@ Real, current results:
 |---|---|---|
 | Contract lint | `genvm-lint check contracts/dao_resolve.py --json` | clean, 3 checks passed; 28 methods |
 | Direct contract tests | `python3.12 -m pytest tests/direct/ -q` | **171 passed** |
-| Integration tests | `gltest tests/integration/ -v -s --network studionet` | **3 passed in 261.76s** (2026-10-23; contract source unchanged) |
+| Integration tests | `gltest tests/integration/ -v -s --network studionet` | **3 passed in 209.37s** (2026-10-23; current source) |
 | Recorder typecheck | `npm run typecheck` | clean |
 | Recorder tests | `npm run recorder:test` | **8 passed** |
 | Frontend lint | `cd frontend && npm run lint` | clean |
-| Frontend unit tests | `cd frontend && npm test` | **25 passed** |
+| Frontend unit tests | `cd frontend && npm test` | **33 passed** |
 | Frontend e2e (mock) | `cd frontend && npx playwright test` | **10 passed**, 4 real-mode tests skipped |
 | Frontend e2e (real reads) | `cd frontend && npm run test:e2e:real` | **4 passed** against StudioNet |
 | Hosted frontend (real reads) | Playwright against `https://daoresolve.vercel.app` | paced run: overview `2 / 3 / 4`, 7 rows; D1 compliant, D5 violation, D4, ENS-7.1; no console errors |
@@ -280,7 +283,7 @@ CI installs the matching browser instead.
 | Live frontend | <https://daoresolve.vercel.app> |
 | Hosting | Vercel static build plus a same-origin `/api` rewrite to StudioNet |
 | Network | StudioNet (gasless), chain id `61999` |
-| Demo contract | `0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb` |
+| Demo contract | `0x151af6e00e1250Af44B8be1a14eb743C9613A41A` |
 | Fresh smoke deployment | `0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e` |
 | Browser-wallet smoke write | `0x23cc5d6ea3d358bdbb5389353c9efd98bccbab987dc7520d77452ee361e6e2e4` (`FINALIZED`) |
 | Schema | `frontend/src/config/schema/dao_resolve.json`, `deployments/studionet.schema.json` |

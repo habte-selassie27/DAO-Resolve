@@ -43,7 +43,7 @@ test.describe("deployed contract reads", () => {
   test("D1 is a code-decided reassessment", async ({ page }) => {
     await loadLive(page, "/disputes/D1", async () => {
       await expect(page.getByRole("heading", { name: "Dispute D1" })).toBeVisible(READY);
-      await expect(page.getByText("RE_EVALUATED")).toBeVisible(READY);
+      await expect(page.getByText("RE_EVALUATED").first()).toBeVisible(READY);
       await expect(page.getByText("Compliant").first()).toBeVisible(READY);
       await expect(page.getByText("Rule check").first()).toBeVisible(READY);
       await expect(page.getByText(/challenge window closed/i).last()).toBeVisible(READY);

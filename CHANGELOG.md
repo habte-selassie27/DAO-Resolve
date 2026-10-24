@@ -2,6 +2,47 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-24 (forms survive reloads and failed signatures)
+
+DONE:
+- Every form in the project now keeps its entered values across page refreshes, hard
+  reloads, and route navigation, including when a wallet signature is rejected or a
+  transaction fails and the user leaves and returns: register rule (including the
+  structured checks table), register proposal, record process event, open dispute,
+  submit evidence, challenge (reason and evidence rows), escalate, and the admin role,
+  dispute-policy, category, and ownership-transfer fields.
+- New shared module `frontend/src/lib/formPersistence.js`: drafts save on every change and
+  restore on mount, keyed per entity (`dispute:<id>:evidence`, `proposal:<id>:event`, ...)
+  so one dispute's evidence never shows on another dispute's screen. On success, forms are
+  reset and the draft is deterministically cleared after the watcher flush, so a later edit
+  is never swallowed. Defaults may be lazy factories so the event form gets a fresh
+  timestamp on reset. Storage falls back gracefully (localStorage -> sessionStorage ->
+  in-memory) when storage is blocked; nothing sensitive is ever written there.
+- Screens now reset forms via the draft manager (`.reset()` after success, `.keep()` for
+  admin policy fields whose live values should stay shown); the ownership-transfer target
+  clears on success so a one-click transfer can never be resubmitted accidentally.
+- Detail screens remount per route path (`RouterView :key="fullPath"`) so param-only
+  navigation between two proposals or disputes can no longer show one entity's draft or
+  stale page state on the other entity's screen.
+- Draft behavior is covered by unit tests, including the restore-simulated-reload,
+  reset-clears-after-flush, no-swallowed-later-edit, keep, factory-defaults, and ref-group
+  cases.
+
+PROOF:
+- `cd frontend && npm test` -> **33 passed (4 files)** including 8 new formPersistence
+  tests. `npm run lint` -> clean. `npm run build` -> passes.
+
+## 2026-10-24 (centered dialogs)
+
+DONE:
+- Create flows (register rule, register proposal, record event, open dispute, challenge,
+  escalate, withdraw) now open as centered modal dialogs on the page instead of right-side
+  sheets. Backdrop centers content, the panel gets rounded borders, internal scrolling, and
+  a max height of the viewport minus margin.
+
+PROOF:
+- `cd frontend && npm test` -> **33 passed**. `npm run build` -> passes.
+
 ## 2026-10-23 (frontend honesty and resilience fixes)
 
 DONE:
@@ -29,8 +70,7 @@ DONE:
   changed in the contract.
 
 PROOF:
-- `cd frontend && npm test` -> **25 passed** (11 new: 2 assessment-panel, 2 network-error
-  mapping, 2 `isNetworkError`, 2 ErrorNotice retry, 3 RoleGate states).
+- `cd frontend && npm test` -> **33 passed** (4 files; 8 formPersistence, 11 review-fix regressions).
 - `cd frontend && npm run lint` -> clean.
 - `cd frontend && npm run build` -> passes.
 - Live reads through the Vite `/api` proxy: `get_config` and `list_active_rules` return
@@ -64,7 +104,7 @@ DONE:
   from "this account lacks the role".
 
 PROOF:
-- `cd frontend && npm test` -> **25 passed**.
+- `cd frontend && npm test` -> **33 passed**.
 - `cd frontend && npm run lint` -> clean.
 - `cd frontend && npx playwright test` -> **10 passed**, 4 real-mode tests skipped.
 - `cd frontend && npm run build` -> passes.

@@ -39,7 +39,7 @@ Errors: `EXPECTED: caller is not authorized`, `EXPECTED: unknown category`.
 
 ### `register_rule(rule_id, title, clause_text, category, interpretation, structured_checks_json) -> None`
 
-Rule registrar only. Registers a rule or publishes a new version. Registering an
+Owner or rule registrar. Registers a rule or publishes a new version. Registering an
 existing `rule_id` creates version N+1, deprecates the previous version, and
 leaves disputes pinned to old versions untouched. A `DETERMINISTIC_ONLY` rule
 requires at least one structured check.
@@ -65,18 +65,18 @@ Errors: `EXPECTED: caller is not authorized`, `EXPECTED: unknown rule`,
 
 ### `register_proposal(proposal_id, content_ref, status_note) -> None`
 
-Recorder only. Registers a proposal so its process can be recorded and disputed.
+Any caller. Registers a proposal so its process can be recorded and disputed. The
+transaction signer is stored as `created_by`.
 
-Errors: `EXPECTED: caller is not authorized`, `EXPECTED: proposal already exists`,
-`EXPECTED: content_ref too long`.
+Errors: `EXPECTED: proposal already exists`, `EXPECTED: content_ref too long`.
 
 ### `record_process_event(proposal_id, event_id, event_type, actor, timestamp_ref, evidence_ref) -> None`
 
-Recorder only. Appends one event. Events are append-only and must be
+Any caller. Appends one event. Events are append-only and must be
 non-decreasing by timestamp. Future timestamps beyond one day are rejected.
 Duplicate event ids are rejected. The event cap is enforced.
 
-Errors: `EXPECTED: caller is not authorized`, `EXPECTED: unknown proposal`,
+Errors: `EXPECTED: unknown proposal`,
 `EXPECTED: duplicate event_id`, `EXPECTED: event timestamp is not monotonic`,
 `EXPECTED: process event cap reached`.
 

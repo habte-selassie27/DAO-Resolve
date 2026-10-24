@@ -6,11 +6,11 @@
 |---|---|
 | `genvm-lint` | Clean; 3 checks passed, 28 methods. One informational notice about a newer runner |
 | Direct tests | **171 passed** |
-| Integration tests | **3 passed in 261.76s on StudioNet** on 2026-10-23 (contract source unchanged); earlier runs passed in 209.44s and 270.07s; see `deployments/studionet.md` |
+| Integration tests | **3 passed in 209.37s on StudioNet** on 2026-10-23 (current source); earlier runs passed in 209.44s and 270.07s; see `deployments/studionet.md` |
 | Recorder typecheck | Clean |
 | Recorder tests | **8 passed** |
 | Frontend lint | Clean |
-| Frontend unit tests | **25 passed** (includes assessment-panel, network-error, retry, and role-gate regressions) |
+| Frontend unit tests | **33 passed** (includes assessment-panel, network-error, retry, and role-gate regressions) |
 | Frontend e2e (mock) | **10 passed**, 4 real-mode tests skipped |
 | Frontend e2e (real reads) | **4 passed** against StudioNet |
 | Hosted frontend (real reads) | Paced run: overview metrics `2 / 3 / 4`, 7 rows; D1 compliant notice, D5 violation notice, D4, ENS-7.1; no console errors |

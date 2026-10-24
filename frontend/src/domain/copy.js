@@ -1,5 +1,5 @@
 export const trustStatement =
-  "Events are recorded by an authorized recorder and link to their public source. Validators read evidence URLs live. The contract does not independently prove that a recorded event happened.";
+  "Proposals and process events can be submitted by any wallet; each event shows who recorded it and links to its public source. Validators read evidence URLs live. The contract does not independently prove that a recorded event happened.";
 
 export const verdictCopy = {
   COMPLIANT: "Compliant. The recorded process and evidence satisfy this rule version.",

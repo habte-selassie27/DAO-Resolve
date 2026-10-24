@@ -385,6 +385,7 @@ import {
   withdrawDispute,
 } from "../lib/chain/writes.js";
 import { runTransaction } from "../lib/chain/tx.js";
+import { bindFormDraft, bindRefDraft } from "../lib/formPersistence.js";
 import { loadConfig, state } from "../lib/store.js";
 
 const route = useRoute();
@@ -408,6 +409,24 @@ const challengeReason = ref("");
 const challengeEvidence = ref([]);
 const escalationReason = ref("");
 const evidenceForm = reactive({ side: "RESPONDENT", kind: "URL", ref: "" });
+// Drafts are keyed per dispute so evidence, challenge text, and escalation
+// reasons survive reloads and rejected signatures while never leaking into
+// another dispute's screens.
+const evidenceFormDraft = bindFormDraft(`dispute:${route.params.disputeId}:evidence`, evidenceForm, {
+  side: "RESPONDENT",
+  kind: "URL",
+  ref: "",
+});
+const challengeDraft = bindRefDraft(
+  `dispute:${route.params.disputeId}:challenge`,
+  { reason: challengeReason, evidence: challengeEvidence },
+  { reason: "", evidence: [] }
+);
+const escalationDraft = bindRefDraft(
+  `dispute:${route.params.disputeId}:escalate`,
+  { reason: escalationReason },
+  { reason: "" }
+);
 let ticker;
 
 const latestAssessment = computed(() => dispute.value?.latest_assessment || {});
@@ -594,8 +613,7 @@ function submitChallenge() {
       }),
     after: () => {
       showChallenge.value = false;
-      challengeReason.value = "";
-      challengeEvidence.value = [];
+      challengeDraft.reset();
     },
   });
 }
@@ -616,7 +634,7 @@ function submitEvidence() {
         kind: evidenceForm.kind,
         ref: evidenceForm.ref,
       }),
-    after: () => Object.assign(evidenceForm, { side: "RESPONDENT", kind: "URL", ref: "" }),
+    after: () => evidenceFormDraft.reset(),
   });
 }
 
@@ -631,7 +649,7 @@ function submitEscalation() {
     send: () => escalateDispute({ disputeId: disputeId.value, reason: escalationReason.value }),
     after: () => {
       showEscalate.value = false;
-      escalationReason.value = "";
+      escalationDraft.reset();
     },
   });
 }

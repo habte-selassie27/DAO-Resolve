@@ -15,6 +15,7 @@ export default defineConfig({
   preview: { proxy },
   test: {
     environment: "jsdom",
+    environmentOptions: { jsdom: { url: "http://localhost/" } },
     include: ["tests/unit/**/*.test.js"],
   },
 });

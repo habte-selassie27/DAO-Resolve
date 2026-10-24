@@ -22,18 +22,18 @@ def test_recorder_can_register_proposal_and_append_events(dao, alice):
     assert events[0]["recorded_by"] == dao.get_config()["owner"]
 
 
-def test_non_recorder_cannot_register_proposal_or_record_event(
+def test_anyone_can_register_proposal_and_record_event(
     dao, alice, bob, direct_vm
 ):
+    # Proposal registration and event recording are permissionless: any wallet
+    # can create its own process record. The record is attributed (created_by /
+    # recorded_by) and append-only.
     direct_vm.sender = bob
-    with pytest.raises(Exception, match="EXPECTED: caller is not authorized"):
-        add_proposal(dao)
-
-    direct_vm.sender = alice
     add_proposal(dao)
-    direct_vm.sender = bob
-    with pytest.raises(Exception, match="EXPECTED: caller is not authorized"):
-        dao.record_process_event("P1", "e1", "SUBMITTED", alice, 1000, "")
+    direct_vm.sender = alice
+    dao.record_process_event("P1", "e1", "SUBMITTED", alice, 1000, "")
+    assert dao.get_proposal("P1")["event_count"] == 1
+    assert dao.get_events("P1", 0, 10)[0]["event_type"] == "SUBMITTED"
 
 
 def test_assigned_recorder_can_record(dao, alice, bob, direct_vm):

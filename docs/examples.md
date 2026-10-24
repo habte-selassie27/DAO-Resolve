@@ -162,7 +162,8 @@ process stays in charge of what happens after the assessment.
 1. Register the rules the DAO actually publishes, one category per rule.
 2. Attach deterministic checks wherever the clause is numeric or event-shaped.
 3. Leave genuinely ambiguous clauses as `NEEDS_INTERPRETATION`.
-4. Point the recorder role at a trusted source of process events.
+4. Optionally point the recorder role at a signer for the recorder CLI. Anyone can
+   register proposals or append events directly; the contract records the signer.
 5. Mark categories that must go to the DAO's own vote with
    `set_category_vote_required`, so finalization is refused and escalation is
    the path.

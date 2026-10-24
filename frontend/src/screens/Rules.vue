@@ -121,6 +121,16 @@ import { state } from "../lib/store.js";
 import { listActiveRules } from "../lib/chain/reads.js";
 import { registerRule } from "../lib/chain/writes.js";
 import { runTransaction } from "../lib/chain/tx.js";
+import { bindFormDraft } from "../lib/formPersistence.js";
+
+const RULE_FORM_DEFAULTS = {
+  ruleId: "",
+  title: "",
+  category: "TIMING",
+  interpretation: "DETERMINISTIC_ONLY",
+  clauseText: "",
+  checks: [],
+};
 
 const rules = ref([]);
 const loading = ref(true);
@@ -130,14 +140,10 @@ const showForm = ref(false);
 const submitting = ref(false);
 const formError = ref("");
 
-const form = reactive({
-  ruleId: "",
-  title: "",
-  category: "TIMING",
-  interpretation: "DETERMINISTIC_ONLY",
-  clauseText: "",
-  checks: [],
-});
+const form = reactive({ ...RULE_FORM_DEFAULTS, checks: [] });
+// Draft persists across reloads and hard refreshes so a rejected wallet
+// signature never loses the entered rule.
+const formDraft = bindFormDraft("rule:register", form, RULE_FORM_DEFAULTS);
 
 const filteredRules = computed(() => {
   const term = query.value.trim().toLowerCase();
@@ -216,14 +222,7 @@ async function submit() {
       return;
     }
     showForm.value = false;
-    Object.assign(form, {
-      ruleId: "",
-      title: "",
-      category: "TIMING",
-      interpretation: "DETERMINISTIC_ONLY",
-      clauseText: "",
-      checks: [],
-    });
+    formDraft.reset();
   } catch (txError) {
     formError.value = txError?.message || "The transaction could not be submitted.";
   } finally {

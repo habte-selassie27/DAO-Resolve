@@ -121,7 +121,7 @@
       <h2>What is real and what is trusted</h2>
       <ul class="small" style="margin: 0; padding-left: 20px">
         <li>Evidence URLs are fetched live by validators. Unreadable evidence cannot support a decisive verdict.</li>
-        <li>Process events are asserted by an authorized recorder and link to a public source. The contract does not independently prove the event happened.</li>
+        <li>Proposals and process events can be submitted by any wallet. Each event shows who recorded it and links to a public source; the contract does not independently prove the event happened.</li>
         <li>Sides are self-declared. The contract records the label; it does not verify identity.</li>
         <li>The <code>web_digest</code> is leader-asserted and not compared. It is labelled informational.</li>
         <li>The output is advisory. It is not a legal ruling and does not execute or reverse anything.</li>

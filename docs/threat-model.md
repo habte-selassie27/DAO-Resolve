@@ -98,9 +98,9 @@ items symmetrically.
 
 **Threat:** A recorder fabricates process events.
 
-**Mitigation:** Authorization and auditability. The contract records who
-recorded what. It does not claim the event is true. DAOs should use recorders
-they trust and can replace.
+**Mitigation:** Attribution and auditability. Any wallet can record an event, and the
+contract records the signer. It does not claim the event is true. DAOs should treat
+recorded events as self-asserted and prefer sources they can inspect.
 
 ### Rule version drift
 
@@ -183,7 +183,7 @@ documented and deferred until a failing test exists, per the change policy.
 | F3 | Consensus can fail on noisy citations or bands | **Monitored** | `D4` reached real consensus in 29.2s evaluate and 23.6s re-evaluate. The failure path appends nothing and the UI offers retry. Risk remains inherent. |
 | F4 | URL evidence is the first 3000 raw characters, so markup can hide text | **Deferred** | A markup-heavy fixture test must fail before changing extraction. Recorded in README limitations. |
 | F5 | A challenged dispute stays `CHALLENGED` until someone calls `re_evaluate` | **Deferred by design** | Permissionless by design; the UI exposes "Request re-evaluation" and explains the state. |
-| F6 | Process events are asserted by one recorder | **Mitigated operationally, not proven** | Recorder plans include source URLs, fetch time, raw fields, and warnings; events store `evidence_ref` and `recorded_by`. Strict separation is available but off in the demo. |
+| F6 | Process events are self-asserted by any wallet | **Mitigated operationally, not proven** | Anyone can submit an event; the UI shows the signer and source. Recorder plans include source URLs, fetch time, raw fields, and warnings; events store `evidence_ref` and `recorded_by`. Strict separation is available but off in the demo. |
 | F7 | Caller-chosen ids allow namespace squatting | **Mitigated in UI** | The UI generates ids, validates characters, and maps "already exists". Unbounded creation remains a contract-level limit. |
 | F8 | `web_digest` is leader-asserted and not compared | **Documented** | UI labels it informational; docs never call it proof. |
 | F9 | Evidence added after an assessment is not considered until re-evaluation | **Documented in UI** | Dispute detail says a challenge/re-evaluation is needed; history is append-only. |

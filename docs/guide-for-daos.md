@@ -28,7 +28,7 @@ The constructor assigns every role to the deployer. Reassign them before a pilot
 |---|---|---|
 | Owner | A multisig or DAO-controlled address | Everything, including roles and policy |
 | Rule registrar | Governance facilitator or rules committee | Register and deprecate rules |
-| Recorder | A trusted operator or automation key | Register proposals and record process events |
+| Recorder (optional) | A designated signer for the recorder CLI | Register proposals and record process events; any wallet may do this directly |
 | Escalator | A governance officer or multisig | Hand a dispute to the DAO's own procedure |
 
 The contract stores one address per role. If all four point at the same account, the UI

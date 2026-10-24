@@ -155,10 +155,26 @@ def _to_address(value) -> Address:
     """Normalize calldata addresses; sender_address is a hex string on-chain."""
     if isinstance(value, Address):
         return value
+    if hasattr(value, "as_hex"):
+        value = value.as_hex
+    elif hasattr(value, "hex") and callable(value.hex):
+        try:
+            value = "0x" + value.hex()
+        except Exception:
+            pass
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        value = "0x" + bytes(value).hex()
+    if isinstance(value, str):
+        text = value.strip()
+        if text.startswith("addr#"):
+            text = text[5:]
+        if not text.startswith("0x") and len(text) == 40:
+            text = "0x" + text
+        value = text
     try:
         return Address(value)
     except Exception:
-        _fail(ERROR_EXPECTED + " invalid address")
+        _fail(ERROR_EXPECTED + " invalid address: " + repr(value)[:80])
 
 def _sender() -> Address:
     return _to_address(gl.message.sender_address)
@@ -832,7 +848,8 @@ class DAOResolve(gl.Contract):
     @gl.public.write
     def register_proposal(self, proposal_id: str, content_ref: str, status_note: str) -> None:
         """Register a proposal so its process can be recorded and disputed."""
-        self._require_role(ROLE_RECORDER)
+        # Permissionless creation: any wallet can register a proposal. Registration
+        # is additive and attributed (created_by). Event recording stays open too.
         clean_id = _clean_id(proposal_id, "proposal_id")
         clean_ref = _clean_text(content_ref, MAX_REF_LEN, "content_ref", False)
         clean_note = _clean_text(status_note, MAX_STATUS_NOTE_LEN, "status_note", True)
@@ -851,7 +868,8 @@ class DAOResolve(gl.Contract):
     def record_process_event(self, proposal_id: str, event_id: str, event_type: str,
                              actor: Address, timestamp_ref: u64, evidence_ref: str) -> None:
         """Append one process event. Events are append-only and time-ordered."""
-        self._require_role(ROLE_RECORDER)
+        # Permissionless recording: any wallet can append an event. Events are
+        # append-only, attributed (recorded_by), timestamp-validated, and capped.
         clean_proposal_id = _clean_id(proposal_id, "proposal_id")
         _require(clean_proposal_id in self.proposals, ERROR_EXPECTED + " unknown proposal")
         clean_event_id = _clean_id(event_id, "event_id")

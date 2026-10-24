@@ -188,6 +188,7 @@ import { formatDuration } from "../lib/format.js";
 import { loadConfig, state } from "../lib/store.js";
 import { setCategoryVoteRequired, setConfig, setRole, transferOwnership } from "../lib/chain/writes.js";
 import { runTransaction } from "../lib/chain/tx.js";
+import { bindFormDraft, bindRefDraft } from "../lib/formPersistence.js";
 
 const pending = ref(false);
 const formError = ref("");
@@ -195,6 +196,19 @@ const roleForm = reactive({ role: "RECORDER", account: "" });
 const configForm = reactive({ challengeWindow: 86400, maxChallengeRounds: 3, strictSeparation: false });
 const categoryForm = reactive({ category: "DISCLOSURE", required: true });
 const newOwner = ref("");
+// Admin drafts also survive reloads; the ownership transfer address clears on
+// success because that single address must never be resubmitted accidentally.
+const roleFormDraft = bindFormDraft("admin:role", roleForm, { role: "RECORDER", account: "" });
+const policyFormDraft = bindFormDraft("admin:policy", configForm, {
+  challengeWindow: 86400,
+  maxChallengeRounds: 3,
+  strictSeparation: false,
+});
+const categoryFormDraft = bindFormDraft("admin:category", categoryForm, {
+  category: "DISCLOSURE",
+  required: true,
+});
+const ownerDraft = bindRefDraft("admin:owner", { newOwner }, { newOwner: "" });
 
 const limits = computed(() => state.config?.limits || {});
 
@@ -239,6 +253,7 @@ async function submitRole() {
     return;
   }
   await run(`Set ${roleForm.role}`, () => setRole({ role: roleForm.role, account: roleForm.account }));
+  roleFormDraft.keep();
 }
 
 async function submitConfig() {
@@ -257,12 +272,14 @@ async function submitConfig() {
       strictSeparation: configForm.strictSeparation,
     })
   );
+  policyFormDraft.keep();
 }
 
 async function submitCategory() {
   await run(`Set ${categoryForm.category} vote-required=${categoryForm.required}`, () =>
     setCategoryVoteRequired({ category: categoryForm.category, required: categoryForm.required })
   );
+  categoryFormDraft.keep();
 }
 
 async function submitTransfer() {
@@ -272,11 +289,14 @@ async function submitTransfer() {
   }
   if (!window.confirm(`Transfer ownership to ${newOwner.value}? This cannot be undone by the old owner.`)) return;
   await run("Transfer ownership", () => transferOwnership(newOwner.value));
+  ownerDraft.reset();
 }
 
 onMounted(async () => {
   await loadConfig();
-  if (state.config) {
+  // A saved draft wins over the on-chain policy values so an interrupted edit
+  // is not clobbered; without a draft the form shows the live policy.
+  if (state.config && !policyFormDraft.restored) {
     configForm.challengeWindow = Number(state.config.challenge_window || 86400);
     configForm.maxChallengeRounds = Number(state.config.max_challenge_rounds || 3);
     configForm.strictSeparation = Boolean(state.config.strict_separation);
