@@ -65,9 +65,10 @@ DONE:
 - `ErrorNotice` gained an optional retry button; all eight screens that show it are wired to
   their own reload function (Rules, RuleDetail, Proposals, ProposalDetail, Disputes,
   DisputeDetail, Overview, Admin config).
-- Kept role-gated rule and proposal creation as designed (rules are the judging standard;
-  events feed the deterministic checks); the trust reasoning is documented here rather than
-  changed in the contract.
+- Changed rule registration to owner or rule registrar only; proposal, event, and dispute
+  creation remain open to any wallet. Event writes now tolerate CLI address encoding.
+- Redeployed the demo contract as `0x151af6e00e1250Af44B8be1a14eb743C9613A41A` and seeded
+  D1-D5, ENS-7.1, assessments, challenges, finalization, withdrawal, and escalation.
 
 PROOF:
 - `cd frontend && npm test` -> **33 passed** (4 files; 8 formPersistence, 11 review-fix regressions).
