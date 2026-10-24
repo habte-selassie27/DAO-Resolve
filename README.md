@@ -258,7 +258,7 @@ Real, current results:
 | Recorder typecheck | `npm run typecheck` | clean |
 | Recorder tests | `npm run recorder:test` | **8 passed** |
 | Frontend lint | `cd frontend && npm run lint` | clean |
-| Frontend unit tests | `cd frontend && npm test` | **37 passed** |
+| Frontend unit tests | `cd frontend && npm test` | **42 passed** |
 | Frontend e2e (mock) | `cd frontend && npx playwright test` | **10 passed**, 4 real-mode tests skipped |
 | Frontend e2e (real reads) | `cd frontend && npm run test:e2e:real` | **4 passed** against StudioNet |
 | Hosted frontend (real reads) | Playwright against `https://daoresolve.vercel.app` | paced run: overview `2 / 3 / 4`, 7 rows; D1 compliant, D5 violation, D4, ENS-7.1; no console errors |
