@@ -173,14 +173,8 @@
             <button v-if="canReEvaluate" class="button" type="button" :disabled="Boolean(pendingAction)" @click="reEvaluate">
               {{ pendingAction === "reevaluate" ? "Requesting…" : "Request re-evaluation" }}
             </button>
-            <button v-if="canChallenge" class="button" type="button" @click="showChallenge = !showChallenge">
-              {{ showChallenge ? "Hide challenge form" : "Challenge this assessment" }}
-            </button>
             <button v-if="canFinalize" class="button" type="button" :disabled="Boolean(pendingAction)" @click="finalize">
               {{ pendingAction === "finalize" ? "Finalizing…" : "Finalize dispute" }}
-            </button>
-            <button v-if="canEscalate" class="button secondary" type="button" @click="showEscalate = true">
-              Escalate to the DAO process
             </button>
             <button v-if="canWithdraw" class="button danger" type="button" :disabled="Boolean(pendingAction)" @click="withdraw">
               {{ pendingAction === "withdraw" ? "Withdrawing…" : "Withdraw dispute" }}
@@ -196,7 +190,7 @@
             The contract's challenge round limit has been reached.
           </div>
 
-          <form v-if="showChallenge && canChallenge" class="panel flat" @submit.prevent="submitChallenge">
+          <form v-if="canChallenge" class="panel flat" @submit.prevent="submitChallenge">
             <h3>Challenge the latest assessment</h3>
             <p class="small muted">
               A challenge appends a reason and optionally new evidence. It does not overwrite the
@@ -314,6 +308,28 @@
 
       <ChallengeHistory :challenges="challenges" />
 
+      <section v-if="canEscalate" class="panel" aria-labelledby="escalate-title">
+        <h2 id="escalate-title" style="margin-top: 0">Escalate to the DAO process</h2>
+        <RoleGate role="escalator" title="Escalation needs the escalator role">
+          <form @submit.prevent="submitEscalation">
+            <p class="small muted">
+              Escalation records a handoff only. It does not decide the dispute or execute anything.
+              The DAO's own procedure takes over from here.
+            </p>
+            <div class="field">
+              <label for="escalation-reason">Reason</label>
+              <textarea id="escalation-reason" v-model.trim="escalationReason" required maxlength="1000" placeholder="Category requires the DAO's own vote." />
+              <span class="hint">{{ escalationReason.length }} / 1000 characters.</span>
+            </div>
+            <div class="row">
+              <button class="button" type="submit" :disabled="Boolean(pendingAction)">
+                {{ pendingAction === "escalate" ? "Escalating…" : "Escalate" }}
+              </button>
+            </div>
+          </form>
+        </RoleGate>
+      </section>
+
       <TrustStatement />
 
       <p class="small muted" style="margin: 0">
@@ -321,28 +337,6 @@
         leaves the status unchanged; retry when validators can reach agreement.
       </p>
     </template>
-
-    <SheetDialog :open="showEscalate" title="Escalate to the DAO process" @close="showEscalate = false">
-      <RoleGate role="escalator" title="Escalation needs the escalator role">
-        <form @submit.prevent="submitEscalation">
-          <p class="small muted">
-            Escalation records a handoff only. It does not decide the dispute or execute anything.
-            The DAO's own procedure takes over from here.
-          </p>
-          <div class="field">
-            <label for="escalation-reason">Reason</label>
-            <textarea id="escalation-reason" v-model.trim="escalationReason" required maxlength="1000" placeholder="Category requires the DAO's own vote." />
-            <span class="hint">{{ escalationReason.length }} / 1000 characters.</span>
-          </div>
-          <div class="row">
-            <button class="button" type="submit" :disabled="Boolean(pendingAction)">
-              {{ pendingAction === "escalate" ? "Escalating…" : "Escalate" }}
-            </button>
-            <button class="button secondary" type="button" @click="showEscalate = false">Cancel</button>
-          </div>
-        </form>
-      </RoleGate>
-    </SheetDialog>
   </div>
 </template>
 
@@ -360,7 +354,6 @@ import EvidenceList from "../components/EvidenceList.vue";
 import FinalityBanner from "../components/FinalityBanner.vue";
 import ProcessRail from "../components/ProcessRail.vue";
 import RoleGate from "../components/RoleGate.vue";
-import SheetDialog from "../components/SheetDialog.vue";
 import StatusChip from "../components/StatusChip.vue";
 import TrustStatement from "../components/TrustStatement.vue";
 import VerdictBadge from "../components/VerdictBadge.vue";
@@ -403,8 +396,6 @@ const now = ref(Math.floor(Date.now() / 1000));
 const pendingAction = ref("");
 const actionError = ref("");
 const evaluationFailure = ref("");
-const showChallenge = ref(false);
-const showEscalate = ref(false);
 const challengeReason = ref("");
 const challengeEvidence = ref([]);
 const escalationReason = ref("");
@@ -612,7 +603,6 @@ function submitChallenge() {
         newEvidence: items.map((item) => ({ side: item.side, kind: item.kind, ref: item.ref })),
       }),
     after: () => {
-      showChallenge.value = false;
       challengeDraft.reset();
     },
   });
@@ -648,7 +638,6 @@ function submitEscalation() {
     label: `Escalate ${disputeId.value}`,
     send: () => escalateDispute({ disputeId: disputeId.value, reason: escalationReason.value }),
     after: () => {
-      showEscalate.value = false;
       escalationDraft.reset();
     },
   });

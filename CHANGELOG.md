@@ -2,6 +2,23 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-24 (forms are normal page forms, not modals)
+
+DONE:
+- Every form is now a normal inline form on the page instead of opening inside a modal
+  dialog: register rule, register proposal, record process event, open dispute, challenge,
+  escalate, and the admin role / dispute-policy / category / ownership-transfer forms. No
+  "open form" button and no cancel button remains; the form is visible where the work
+  happens, drafts restore into it on reload, and it submits in place.
+- Removed the now-unused `SheetDialog` component and the modal backdrop/panel CSS; the
+  challenge and escalate forms reuse the same inline panel style as the evidence form.
+- Removed stale `show*` refs and the `showForm`-style open/close plumbing from the four
+  screens that used modals; `SheetDialog` is no longer imported anywhere.
+
+PROOF:
+- `cd frontend && npm test` -> **33 passed (4 files)**. `npm run lint` -> clean.
+  `npm run build` -> passes.
+
 ## 2026-10-24 (forms survive reloads and failed signatures)
 
 DONE:

@@ -6,10 +6,6 @@
         <h1 style="margin-bottom: 4px">{{ proposal?.proposal_id || proposalId }}</h1>
         <p class="muted" style="margin: 0">{{ proposal?.status_note || "No status note." }}</p>
       </div>
-      <div class="row">
-        <button class="button secondary" type="button" @click="showEventForm = true">Record event</button>
-        <button class="button" type="button" @click="showDisputeForm = true">Open dispute</button>
-      </div>
     </div>
 
     <ErrorNotice
@@ -85,13 +81,13 @@
       </section>
 
       <TrustStatement />
-    </template>
 
-    <SheetDialog :open="showEventForm" title="Record a process event" @close="showEventForm = false">
-      <p v-if="!state.address" class="notice system small" style="margin-bottom: 12px">
-        Connect a wallet to sign this transaction. Reads work without one.
-      </p>
-      <form @submit.prevent="submitEvent">
+      <section class="panel" aria-labelledby="record-event-title">
+        <h2 id="record-event-title" style="margin-top: 0">Record a process event</h2>
+        <p v-if="!state.address" class="notice system small" style="margin-bottom: 12px">
+          Connect a wallet to sign this transaction. Reads work without one.
+        </p>
+        <form @submit.prevent="submitEvent">
           <div class="notice system">
             <p class="tiny" style="margin: 0">
               Recorded events are asserted by the recorder, not independently proven by the
@@ -129,47 +125,47 @@
           <p v-if="eventError" class="notice violation small">{{ eventError }}</p>
           <div class="row">
             <button class="button" type="submit" :disabled="submittingEvent || !state.address">{{ submittingEvent ? "Submitting…" : "Record event" }}</button>
-            <button class="button secondary" type="button" @click="showEventForm = false">Cancel</button>
           </div>
         </form>
-    </SheetDialog>
+      </section>
 
-    <SheetDialog :open="showDisputeForm" title="Open a dispute" @close="showDisputeForm = false">
-      <form @submit.prevent="submitDispute">
-        <div class="notice">
-          <p class="tiny" style="margin: 0">
-            Anyone can open a dispute. The contract records it as an advisory assessment against
-            the pinned rule version. It does not penalize anyone or reverse a governance action.
-          </p>
-        </div>
-        <div class="form-grid" style="margin-top: 12px">
-          <div class="field">
-            <label for="dispute-id">Dispute id</label>
-            <input id="dispute-id" v-model.trim="disputeForm.disputeId" required />
+      <section class="panel" aria-labelledby="open-dispute-title">
+        <h2 id="open-dispute-title" style="margin-top: 0">Open a dispute</h2>
+        <form @submit.prevent="submitDispute">
+          <div class="notice">
+            <p class="tiny" style="margin: 0">
+              Anyone can open a dispute. The contract records it as an advisory assessment against
+              the pinned rule version. It does not penalize anyone or reverse a governance action.
+            </p>
           </div>
-          <div class="field">
-            <label for="dispute-rule">Rule (latest active version)</label>
-            <select id="dispute-rule" v-model="disputeForm.ruleKey" required>
-              <option disabled value="">Choose an active rule</option>
-              <option v-for="rule in activeRules" :key="`${rule.rule_id}-${rule.version}`" :value="`${rule.rule_id}#${rule.version}`">
-                {{ rule.rule_id }} v{{ rule.version }} — {{ rule.title }}
-              </option>
-            </select>
-            <span class="hint">The contract pins the latest active version when the dispute opens.</span>
+          <div class="form-grid" style="margin-top: 12px">
+            <div class="field">
+              <label for="dispute-id">Dispute id</label>
+              <input id="dispute-id" v-model.trim="disputeForm.disputeId" required />
+            </div>
+            <div class="field">
+              <label for="dispute-rule">Rule (latest active version)</label>
+              <select id="dispute-rule" v-model="disputeForm.ruleKey" required>
+                <option disabled value="">Choose an active rule</option>
+                <option v-for="rule in activeRules" :key="`${rule.rule_id}-${rule.version}`" :value="`${rule.rule_id}#${rule.version}`">
+                  {{ rule.rule_id }} v{{ rule.version }} — {{ rule.title }}
+                </option>
+              </select>
+              <span class="hint">The contract pins the latest active version when the dispute opens.</span>
+            </div>
+            <div class="field full">
+              <label for="dispute-claim">Claim</label>
+              <textarea id="dispute-claim" v-model.trim="disputeForm.claimText" required placeholder="The proposal required at least 48 hours of review; voting started after 3 hours." />
+              <span class="hint">{{ disputeForm.claimText.length }} / 2000 characters.</span>
+            </div>
           </div>
-          <div class="field full">
-            <label for="dispute-claim">Claim</label>
-            <textarea id="dispute-claim" v-model.trim="disputeForm.claimText" required placeholder="The proposal required at least 48 hours of review; voting started after 3 hours." />
-            <span class="hint">{{ disputeForm.claimText.length }} / 2000 characters.</span>
+          <p v-if="disputeError" class="notice violation small">{{ disputeError }}</p>
+          <div class="row">
+            <button class="button" type="submit" :disabled="submittingDispute">{{ submittingDispute ? "Submitting…" : "Open dispute" }}</button>
           </div>
-        </div>
-        <p v-if="disputeError" class="notice violation small">{{ disputeError }}</p>
-        <div class="row">
-          <button class="button" type="submit" :disabled="submittingDispute">{{ submittingDispute ? "Submitting…" : "Open dispute" }}</button>
-          <button class="button secondary" type="button" @click="showDisputeForm = false">Cancel</button>
-        </div>
-      </form>
-    </SheetDialog>
+        </form>
+      </section>
+    </template>
   </div>
 </template>
 
@@ -179,7 +175,6 @@ import { useRoute, useRouter } from "vue-router";
 import AddressChip from "../components/AddressChip.vue";
 import ErrorNotice from "../components/ErrorNotice.vue";
 import ProcessRail from "../components/ProcessRail.vue";
-import SheetDialog from "../components/SheetDialog.vue";
 import StatusChip from "../components/StatusChip.vue";
 import TrustStatement from "../components/TrustStatement.vue";
 import { formatTime } from "../lib/format.js";
@@ -200,8 +195,6 @@ const previewKey = ref("");
 const previewChecks = ref([]);
 const loading = ref(true);
 const error = ref("");
-const showEventForm = ref(false);
-const showDisputeForm = ref(false);
 const submittingEvent = ref(false);
 const submittingDispute = ref(false);
 const eventError = ref("");
@@ -330,7 +323,6 @@ async function submitEvent() {
       eventError.value = "The transaction did not finalize. Review the transaction tray and try again.";
       return;
     }
-    showEventForm.value = false;
     eventFormDraft.reset();
   } catch (txError) {
     eventError.value = txError?.message || "The transaction could not be submitted.";
@@ -372,7 +364,6 @@ async function submitDispute() {
       disputeError.value = "The transaction did not finalize. Review the transaction tray and try again.";
       return;
     }
-    showDisputeForm.value = false;
     // The dispute now exists on chain; clear its draft so returning here
     // starts a fresh claim instead of resubmitting the same id.
     disputeFormDraft.reset();

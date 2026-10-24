@@ -8,7 +8,6 @@
           ones; old versions stay readable for the record.
         </p>
       </div>
-      <button class="button" type="button" @click="showForm = true">Register a rule</button>
     </div>
 
     <div class="panel flat toolbar">
@@ -54,60 +53,60 @@
     </div>
     <EmptyState v-else :message="query ? 'No active rule matches that search.' : emptyCopy.rules" />
 
-    <SheetDialog :open="showForm" title="Register a rule" @close="showForm = false">
+    <section class="panel" aria-labelledby="register-rule-title">
+      <h2 id="register-rule-title" style="margin-top: 0">Register a rule</h2>
       <p v-if="!state.address" class="notice system small" style="margin-bottom: 12px">
         Connect a wallet to sign this transaction. Reads work without one.
       </p>
       <form @submit.prevent="submit">
-          <div class="form-grid">
-            <div class="field">
-              <label for="rule-id">Rule id</label>
-              <input id="rule-id" v-model.trim="form.ruleId" required placeholder="R-REVIEW" />
-              <span class="hint">Letters, digits, dash, underscore, dot, colon.</span>
-            </div>
-            <div class="field">
-              <label for="rule-title">Title</label>
-              <input id="rule-title" v-model.trim="form.title" required placeholder="Minimum review period" />
-            </div>
-            <div class="field">
-              <label for="rule-category">Category</label>
-              <select id="rule-category" v-model="form.category">
-                <option>PROCESS</option><option>QUORUM</option><option>TIMING</option>
-                <option>ELIGIBILITY</option><option>DISCLOSURE</option><option>OTHER</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="rule-interpretation">Interpretation</label>
-              <select id="rule-interpretation" v-model="form.interpretation">
-                <option value="DETERMINISTIC_ONLY">DETERMINISTIC_ONLY</option>
-                <option value="NEEDS_INTERPRETATION">NEEDS_INTERPRETATION</option>
-              </select>
-              <span class="hint">DETERMINISTIC_ONLY requires at least one check.</span>
-            </div>
-            <div class="field full">
-              <label for="rule-clause">Clause text</label>
-              <textarea id="rule-clause" v-model.trim="form.clauseText" required placeholder="Proposals require at least 48 hours of review before voting…" />
-              <span class="hint">{{ form.clauseText.length }} / 2000 characters.</span>
-            </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="rule-id">Rule id</label>
+            <input id="rule-id" v-model.trim="form.ruleId" required placeholder="R-REVIEW" />
+            <span class="hint">Letters, digits, dash, underscore, dot, colon.</span>
           </div>
+          <div class="field">
+            <label for="rule-title">Title</label>
+            <input id="rule-title" v-model.trim="form.title" required placeholder="Minimum review period" />
+          </div>
+          <div class="field">
+            <label for="rule-category">Category</label>
+            <select id="rule-category" v-model="form.category">
+              <option>PROCESS</option><option>QUORUM</option><option>TIMING</option>
+              <option>ELIGIBILITY</option><option>DISCLOSURE</option><option>OTHER</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="rule-interpretation">Interpretation</label>
+            <select id="rule-interpretation" v-model="form.interpretation">
+              <option value="DETERMINISTIC_ONLY">DETERMINISTIC_ONLY</option>
+              <option value="NEEDS_INTERPRETATION">NEEDS_INTERPRETATION</option>
+            </select>
+            <span class="hint">DETERMINISTIC_ONLY requires at least one check.</span>
+          </div>
+          <div class="field full">
+            <label for="rule-clause">Clause text</label>
+            <textarea id="rule-clause" v-model.trim="form.clauseText" required placeholder="Proposals require at least 48 hours of review before voting…" />
+            <span class="hint">{{ form.clauseText.length }} / 2000 characters.</span>
+          </div>
+        </div>
 
-          <hr class="divider" />
-          <h3>Structured checks</h3>
-          <p class="small muted">
-            These run in code before any model. A failed check forces a violation. For an
-            interpretive rule, a failed check is still decisive.
-          </p>
-          <CheckEditor v-model="form.checks" />
-          <hr class="divider" />
-          <p v-if="formError" class="notice violation small">{{ formError }}</p>
-          <div class="row">
-            <button class="button" type="submit" :disabled="submitting || !state.address">
-              {{ submitting ? "Submitting…" : "Register rule" }}
-            </button>
-            <button class="button secondary" type="button" @click="showForm = false">Cancel</button>
-          </div>
-        </form>
-    </SheetDialog>
+        <hr class="divider" />
+        <h3>Structured checks</h3>
+        <p class="small muted">
+          These run in code before any model. A failed check forces a violation. For an
+          interpretive rule, a failed check is still decisive.
+        </p>
+        <CheckEditor v-model="form.checks" />
+        <hr class="divider" />
+        <p v-if="formError" class="notice violation small">{{ formError }}</p>
+        <div class="row">
+          <button class="button" type="submit" :disabled="submitting || !state.address">
+            {{ submitting ? "Submitting…" : "Register rule" }}
+          </button>
+        </div>
+      </form>
+    </section>
   </div>
 </template>
 
@@ -116,7 +115,6 @@ import { computed, onMounted, reactive, ref } from "vue";
 import CheckEditor from "../components/CheckEditor.vue";
 import EmptyState from "../components/EmptyState.vue";
 import ErrorNotice from "../components/ErrorNotice.vue";
-import SheetDialog from "../components/SheetDialog.vue";
 import { state } from "../lib/store.js";
 import { listActiveRules } from "../lib/chain/reads.js";
 import { registerRule } from "../lib/chain/writes.js";
@@ -136,7 +134,6 @@ const rules = ref([]);
 const loading = ref(true);
 const error = ref("");
 const query = ref("");
-const showForm = ref(false);
 const submitting = ref(false);
 const formError = ref("");
 
@@ -221,7 +218,6 @@ async function submit() {
       formError.value = "The transaction did not finalize. Review the transaction tray and try again.";
       return;
     }
-    showForm.value = false;
     formDraft.reset();
   } catch (txError) {
     formError.value = txError?.message || "The transaction could not be submitted.";

@@ -8,7 +8,6 @@
           records the signer. A dispute points at one proposal and one pinned rule version.
         </p>
       </div>
-      <button class="button" type="button" @click="showForm = true">Register a proposal</button>
     </div>
 
     <div class="notice system">
@@ -46,32 +45,32 @@
     </div>
     <EmptyState v-else :message="emptyCopy.proposals" />
 
-    <SheetDialog :open="showForm" title="Register a proposal" @close="showForm = false">
+    <section class="panel" aria-labelledby="register-proposal-title">
+      <h2 id="register-proposal-title" style="margin-top: 0">Register a proposal</h2>
       <p v-if="!state.address" class="notice system small" style="margin-bottom: 12px">
         Connect a wallet to sign this transaction. Reads work without one.
       </p>
       <form @submit.prevent="submit">
-          <div class="field">
-            <label for="proposal-id">Proposal id</label>
-            <input id="proposal-id" v-model.trim="form.proposalId" required placeholder="P-001" />
-            <span class="hint">Letters, digits, dash, underscore, dot, colon.</span>
-          </div>
-          <div class="field">
-            <label for="proposal-ref">Content reference</label>
-            <input id="proposal-ref" v-model.trim="form.contentRef" required placeholder="https://forum.example.org/t/proposal" />
-            <span class="hint">The authoritative public page for this proposal.</span>
-          </div>
-          <div class="field">
-            <label for="proposal-note">Status note</label>
-            <input id="proposal-note" v-model.trim="form.statusNote" placeholder="Discussion opened; vote not started." />
-          </div>
-          <p v-if="formError" class="notice violation small">{{ formError }}</p>
-          <div class="row">
-            <button class="button" type="submit" :disabled="submitting || !state.address">{{ submitting ? "Submitting…" : "Register proposal" }}</button>
-            <button class="button secondary" type="button" @click="showForm = false">Cancel</button>
-          </div>
-        </form>
-    </SheetDialog>
+        <div class="field">
+          <label for="proposal-id">Proposal id</label>
+          <input id="proposal-id" v-model.trim="form.proposalId" required placeholder="P-001" />
+          <span class="hint">Letters, digits, dash, underscore, dot, colon.</span>
+        </div>
+        <div class="field">
+          <label for="proposal-ref">Content reference</label>
+          <input id="proposal-ref" v-model.trim="form.contentRef" required placeholder="https://forum.example.org/t/proposal" />
+          <span class="hint">The authoritative public page for this proposal.</span>
+        </div>
+        <div class="field">
+          <label for="proposal-note">Status note</label>
+          <input id="proposal-note" v-model.trim="form.statusNote" placeholder="Discussion opened; vote not started." />
+        </div>
+        <p v-if="formError" class="notice violation small">{{ formError }}</p>
+        <div class="row">
+          <button class="button" type="submit" :disabled="submitting || !state.address">{{ submitting ? "Submitting…" : "Register proposal" }}</button>
+        </div>
+      </form>
+    </section>
   </div>
 </template>
 
@@ -79,7 +78,6 @@
 import { onMounted, reactive, ref } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import ErrorNotice from "../components/ErrorNotice.vue";
-import SheetDialog from "../components/SheetDialog.vue";
 import { state } from "../lib/store.js";
 import { emptyCopy } from "../domain/copy.js";
 import { formatTime } from "../lib/format.js";
@@ -93,7 +91,6 @@ const PROPOSAL_FORM_DEFAULTS = { proposalId: "", contentRef: "", statusNote: "" 
 const proposals = ref([]);
 const loading = ref(true);
 const error = ref("");
-const showForm = ref(false);
 const submitting = ref(false);
 const formError = ref("");
 const form = reactive({ ...PROPOSAL_FORM_DEFAULTS });
@@ -144,7 +141,6 @@ async function submit() {
       formError.value = "The transaction did not finalize. Review the transaction tray and try again.";
       return;
     }
-    showForm.value = false;
     formDraft.reset();
   } catch (txError) {
     formError.value = txError?.message || "The transaction could not be submitted.";
