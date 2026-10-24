@@ -2,6 +2,24 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-24 (fix: rules screen froze with an empty rule list)
+
+DONE:
+- Fixed the register-rule form becoming unresponsive on a fresh contract. `Rules.vue`
+  rendered `emptyCopy.rules` without importing `emptyCopy`, so as soon as the rules list
+  was empty (exactly the state of a freshly deployed contract) the render function threw
+  `Cannot read properties of undefined (reading 'rules')` and Vue stopped updating the
+  screen. The import is restored, and the form submits normally.
+- Enabled the `vue/no-undef-properties` ESLint rule for the whole frontend. It catches
+  exactly this class of bug (a template referencing an identifier the script never
+  defines) and the current codebase passes it cleanly.
+- Added a screen regression test that mounts the Rules screen with zero rules and asserts
+  the empty state and the enabled submit button both render.
+
+PROOF:
+- `cd frontend && npm test` -> **42 passed (6 files)**. `npm run lint` -> clean (now with
+  `vue/no-undef-properties`). `npm run build` -> passes.
+
 ## 2026-10-24 (wallet chooser: pick from every browser wallet)
 
 DONE:
