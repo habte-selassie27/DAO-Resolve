@@ -552,7 +552,7 @@ JSON-RPC results.
 |---|---|
 | Live URL | <https://daoresolve.vercel.app> |
 | Vercel project | `daoresolve` under `habteselassies-projects` |
-| Production deployment | `dpl_6EeXBrm1oHSCV2ruTn72pVMHKuXg` (final build for unseeded official contract) |
+| Production deployment | `dpl_2Rz39UT4PTz5o8uNMunHFvHZ8Yyf` (final build after rules-screen fix) |
 | Build | `npm run build` (Vite) |
 | Proxy check | `POST /api` with `eth_chainId` -> `200`, `{"jsonrpc":"2.0","result":"0xf22f","id":1}` |
 | Contract read | Hosted `/api` returned `owner`, `challenge_window`, and `recorder` from the demo contract |
