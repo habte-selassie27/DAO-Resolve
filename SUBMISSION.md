@@ -132,7 +132,7 @@ CONTRACT_ADDRESS=0xb4d8bf96a4E5E576c474741879B0E4D5cd6FbEcb npm run verify
 
 Deployment records, receipts, and the schema are in `deployments/` and
 `frontend/src/config/schema/`. Real-mode screenshots are in `docs/screenshots/`
-(overview, D1, D4, ENS-7.1, the browser-write smoke, and the hosted app).
+(overview, D1, D5, D4, ENS-7.1, the browser-write smoke, and the hosted app).
 
 ## Limitations and roadmap
 

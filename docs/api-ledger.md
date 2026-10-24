@@ -71,7 +71,7 @@ Live recorder transactions:
 | Mock mode uses fixtures and simulated lifecycle, never the network | VERIFIED | 10 Playwright tests with `VITE_MOCK=1` |
 | Real mode reads the deployed contract through a same-origin proxy | VERIFIED | `npm run test:e2e:real` -> 4 passed (overview, D1, D4, ENS-7.1); earlier manual run rendered metrics `2 / 3 / 4`, 7 rows, no page errors |
 | Full write lifecycle with a real wallet | VERIFIED with an injected EIP-1193 provider | Browser test connected the owner address, signed `register_proposal`, showed submitted → consensus → finalized, and the contract read the new proposal. The MetaMask extension UX is still untested. |
-| Hosted frontend URL | VERIFIED | <https://daoresolve.vercel.app> (Vercel project `daoresolve`, production). Paced Playwright real reads on 2026-10-23: overview metrics `2 / 3 / 4`, 7 rows, D1, D4, ENS-7.1, no console errors. |
+| Hosted frontend URL | VERIFIED | <https://daoresolve.vercel.app> (Vercel project `daoresolve`, production). Paced Playwright real reads on 2026-10-23: overview metrics `2 / 3 / 4`, 7 rows, D1, D5, D4, ENS-7.1, no console errors. |
 | Vercel `/api` rewrite is same-origin | VERIFIED | `frontend/vercel.json`; `POST https://daoresolve.vercel.app/api` returned `200` with `{"result":"0xf22f"}` and a real `get_config` read succeeded. The exact `/api` rule avoids Studio's trailing-slash redirect. |
 
 ## Sources

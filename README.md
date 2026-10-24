@@ -297,7 +297,7 @@ the demo network.
 `/` overview · `/rules` · `/rules/:ruleId` · `/proposals` · `/proposals/:proposalId` ·
 `/disputes` · `/disputes/:disputeId` · `/admin` · `/how-it-works`
 
-The UI shows `submitted → pending → accepted → finalized` separately, never treats
+The UI shows `submitted → consensus → accepted → finalized` separately, never treats
 accepted as final, and renders a failed or undetermined evaluation as its own state with a
 retry, not as a verdict.
 
