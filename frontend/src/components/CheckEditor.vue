@@ -77,12 +77,20 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
+
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
 });
 const emit = defineEmits(["update:modelValue"]);
 
-const checks = props.modelValue;
+// Read the prop reactively. A plain `const checks = props.modelValue` snapshot
+// goes stale after the first update (the parent replaces the array), which made
+// "Add check" and "Remove" silently do nothing.
+const checks = computed({
+  get: () => props.modelValue || [],
+  set: (value) => emit("update:modelValue", value),
+});
 
 function blankCheck() {
   return {
@@ -98,16 +106,16 @@ function blankCheck() {
 }
 
 function add() {
-  emit("update:modelValue", [...checks, blankCheck()]);
+  checks.value = [...checks.value, blankCheck()];
 }
 
 function remove(index) {
-  emit("update:modelValue", checks.filter((_, itemIndex) => itemIndex !== index));
+  checks.value = checks.value.filter((_, itemIndex) => itemIndex !== index);
 }
 
 function normalize(check) {
   if (check.kind === "REQUIRED_EVENT" || check.kind === "REQUIRED_ROLE") check.threshold = 0;
   if (check.kind === "REQUIRED_EVENT" || check.kind === "MIN_COUNT") check.role = "";
-  emit("update:modelValue", [...checks]);
+  checks.value = [...checks.value];
 }
 </script>

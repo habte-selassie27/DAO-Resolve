@@ -10,7 +10,7 @@
 | Recorder typecheck | Clean |
 | Recorder tests | **8 passed** |
 | Frontend lint | Clean |
-| Frontend unit tests | **33 passed** (includes assessment-panel, network-error, retry, and role-gate regressions) |
+| Frontend unit tests | **37 passed** (includes assessment-panel, network-error, retry, and role-gate regressions) |
 | Frontend e2e (mock) | **10 passed**, 4 real-mode tests skipped |
 | Frontend e2e (real reads) | **4 passed** against StudioNet |
 | Hosted frontend (real reads) | Paced run: overview metrics `2 / 3 / 4`, 7 rows; D1 compliant notice, D5 violation notice, D4, ENS-7.1; no console errors |

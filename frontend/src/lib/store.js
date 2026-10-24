@@ -20,11 +20,11 @@ export async function loadConfig() {
   }
 }
 
-export async function connect() {
+export async function connect(provider) {
   state.connecting = true;
   state.walletError = "";
   try {
-    state.address = await connectWallet();
+    state.address = await connectWallet(provider);
     await loadConfig();
   } catch (error) {
     state.walletError = error?.message || String(error);

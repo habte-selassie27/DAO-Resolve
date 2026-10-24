@@ -2,6 +2,21 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-24 (structured check editor fix)
+
+DONE:
+- Fixed the "Add check" button in the rule form doing nothing. `CheckEditor` snapshotted
+  the `modelValue` array at mount (`const checks = props.modelValue`), so after the first
+  v-model update the editor kept rendering the stale array and no check row ever appeared;
+  the same bug affected Remove and kind normalization. The editor now reads the prop
+  through a computed getter/setter, which is how v-model updates reach it.
+- Added four regression tests: add-and-render, remove, kind-normalization, and in-place
+  row edits reaching the parent model.
+
+PROOF:
+- `cd frontend && npm test` -> **37 passed (4 files)**. `npm run lint` -> clean.
+  `npm run build` -> passes.
+
 ## 2026-10-24 (forms are normal page forms, not modals)
 
 DONE:
@@ -16,7 +31,7 @@ DONE:
   screens that used modals; `SheetDialog` is no longer imported anywhere.
 
 PROOF:
-- `cd frontend && npm test` -> **33 passed (4 files)**. `npm run lint` -> clean.
+- `cd frontend && npm test` -> **37 passed (4 files)**. `npm run lint` -> clean.
   `npm run build` -> passes.
 
 ## 2026-10-24 (forms survive reloads and failed signatures)
@@ -46,7 +61,7 @@ DONE:
   cases.
 
 PROOF:
-- `cd frontend && npm test` -> **33 passed (4 files)** including 8 new formPersistence
+- `cd frontend && npm test` -> **37 passed (4 files)** including 8 new formPersistence
   tests. `npm run lint` -> clean. `npm run build` -> passes.
 
 ## 2026-10-24 (centered dialogs)
@@ -58,7 +73,7 @@ DONE:
   a max height of the viewport minus margin.
 
 PROOF:
-- `cd frontend && npm test` -> **33 passed**. `npm run build` -> passes.
+- `cd frontend && npm test` -> **37 passed**. `npm run build` -> passes.
 
 ## 2026-10-23 (frontend honesty and resilience fixes)
 
@@ -88,7 +103,7 @@ DONE:
   D1-D5, ENS-7.1, assessments, challenges, finalization, withdrawal, and escalation.
 
 PROOF:
-- `cd frontend && npm test` -> **33 passed** (4 files; 8 formPersistence, 11 review-fix regressions).
+- `cd frontend && npm test` -> **37 passed** (4 files; 8 formPersistence, 11 review-fix regressions).
 - `cd frontend && npm run lint` -> clean.
 - `cd frontend && npm run build` -> passes.
 - Live reads through the Vite `/api` proxy: `get_config` and `list_active_rules` return
@@ -122,7 +137,7 @@ DONE:
   from "this account lacks the role".
 
 PROOF:
-- `cd frontend && npm test` -> **33 passed**.
+- `cd frontend && npm test` -> **37 passed**.
 - `cd frontend && npm run lint` -> clean.
 - `cd frontend && npx playwright test` -> **10 passed**, 4 real-mode tests skipped.
 - `cd frontend && npm run build` -> passes.

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import AssessmentPanel from "../../src/components/AssessmentPanel.vue";
+import CheckEditor from "../../src/components/CheckEditor.vue";
 import ErrorNotice from "../../src/components/ErrorNotice.vue";
 import EvaluationFailureNotice from "../../src/components/EvaluationFailureNotice.vue";
 import FinalityBanner from "../../src/components/FinalityBanner.vue";
@@ -161,5 +162,61 @@ describe("role gate honesty", () => {
       slots: { default: "<form>register</form>" },
     });
     expect(wrapper.find("form").exists()).toBe(true);
+  });
+});
+
+describe("structured check editor", () => {
+  const baseCheck = (overrides = {}) => ({
+    check_id: "review-window",
+    kind: "MIN_ELAPSED",
+    event_type: "",
+    from_event_type: "SUBMITTED",
+    to_event_type: "VOTING_STARTED",
+    threshold: 172800,
+    role: "recorder",
+    role_address: "0x0000000000000000000000000000000000000000",
+    ...overrides,
+  });
+
+  it("adds a check and renders it after the parent applies v-model (regression: Add check did nothing)", async () => {
+    const wrapper = mount(CheckEditor, { props: { modelValue: [] } });
+    await wrapper.get("button").trigger("click"); // Add check is the only button with no rows
+    const emitted = wrapper.emitted("update:modelValue");
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0][0]).toHaveLength(1);
+    expect(emitted[0][0][0].kind).toBe("MIN_ELAPSED");
+
+    // Simulate the parent applying v-model, which is what makes the row appear.
+    await wrapper.setProps({ modelValue: emitted[0][0] });
+    expect(wrapper.text()).toContain("Check 1");
+    expect(wrapper.findAll("input").length).toBeGreaterThan(0);
+  });
+
+  it("removes a check at the clicked row", async () => {
+    const wrapper = mount(CheckEditor, { props: { modelValue: [baseCheck()] } });
+    expect(wrapper.text()).toContain("Check 1");
+    const remove = wrapper.findAll("button").find((button) => button.text() === "Remove");
+    await remove.trigger("click");
+    const emitted = wrapper.emitted("update:modelValue");
+    expect(emitted?.at(-1)[0]).toEqual([]);
+  });
+
+  it("normalizes kind-specific fields when the kind changes", async () => {
+    const wrapper = mount(CheckEditor, { props: { modelValue: [baseCheck()] } });
+    const kindSelect = wrapper.findAll("select").find((select) => select.element.value === "MIN_ELAPSED");
+    await kindSelect.setValue("REQUIRED_EVENT");
+    const updated = wrapper.emitted("update:modelValue").at(-1)[0][0];
+    expect(updated.kind).toBe("REQUIRED_EVENT");
+    expect(updated.threshold).toBe(0);
+    expect(updated.role).toBe("");
+  });
+
+  it("keeps edits to a check row flowing to the parent model", async () => {
+    const row = baseCheck();
+    const wrapper = mount(CheckEditor, { props: { modelValue: [row] } });
+    const idInput = wrapper.findAll("input").find((input) => input.element.value === "review-window");
+    await idInput.setValue("review-48h");
+    // v-model edits the row object in place, which is the parent's reactive object.
+    expect(wrapper.props("modelValue")[0].check_id).toBe("review-48h");
   });
 });

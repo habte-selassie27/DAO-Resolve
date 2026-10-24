@@ -61,7 +61,7 @@ clearly labelled and never touches the network.
   consensus, and finalized states, and the contract returned the new proposal. The
   MetaMask extension UX itself is still untested.
 - Contract lint is clean, 171 direct tests pass, 3 integration tests passed under real
-  consensus, recorder typecheck and 8 recorder tests pass, frontend lint and 33 unit tests
+  consensus, recorder typecheck and 8 recorder tests pass, frontend lint and 37 unit tests
   pass, and 10 mock-mode e2e tests pass.
 
 **Trusted:**
@@ -115,7 +115,7 @@ cd frontend && npm run lint
 clean
 
 cd frontend && npm test
-33 passed
+37 passed
 
 cd frontend && npx playwright test
 10 passed, 4 real-mode tests skipped
