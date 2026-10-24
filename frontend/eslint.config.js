@@ -18,6 +18,7 @@ export default [
     },
     rules: {
       "vue/multi-word-component-names": "off",
+      "vue/no-undef-properties": "error",
       "no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
   },

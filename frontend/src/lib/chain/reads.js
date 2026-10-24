@@ -137,10 +137,19 @@ export async function listProposals(offset = 0, limit = 50) {
   // disputes and from a deployment seed list; the demo deployment provides
   // VITE_PROPOSAL_IDS. This keeps the UI honest rather than inventing a view.
   if (mockMode) return mock.listProposals(offset, limit);
-  const ids = (import.meta.env.VITE_PROPOSAL_IDS || "P1,P2,P3,P4,P5,ENS-7.1")
+  const configured = (import.meta.env.VITE_PROPOSAL_IDS || "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
+  let ids = configured;
+  if (ids.length === 0) {
+    try {
+      const disputes = await listDisputes(0, 50);
+      ids = [...new Set((disputes || []).map((item) => item?.proposal_id).filter(Boolean))];
+    } catch {
+      ids = [];
+    }
+  }
   const page = ids.slice(offset, offset + limit);
   const proposals = await Promise.all(
     page.map(async (id) => {

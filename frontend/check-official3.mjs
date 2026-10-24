@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch({ executablePath: '/home/izzy/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell' });
+const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const errors = [];
+page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+page.on('requestfailed', (r) => errors.push('requestfailed: ' + r.url() + ' ' + r.failure()?.errorText));
+const base = 'https://daoresolve.vercel.app';
+await page.goto(base, { waitUntil:'networkidle' });
+await page.getByRole('heading',{name:/Did the process hold/}).waitFor({timeout:30000});
+await page.waitForTimeout(3000);
+console.log('ERRORS', JSON.stringify(errors, null, 2).slice(0,2000));
+await browser.close();

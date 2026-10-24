@@ -15,23 +15,23 @@ base64-decoded, and hashed against the working file.
 | Item | Value |
 |---|---|
 | Contract file | `contracts/dao_resolve.py` (1,463 lines) |
-| Source SHA-256 | `8b5948bccdfcd6786bf89262e8e0fd6f31374df035a6ea725117c07e09eb1417` |
+| Source SHA-256 | `ed6dff655962b4219dfc1e87c3930900a10aaf68a541be5e5f9e7c429de5f855` |
 | Runner | `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6` (v0.3.0-rc7) |
-| Contract address | `0x151af6e00e1250Af44B8be1a14eb743C9613A41A` |
-| Deploy transaction | `0xb138073ad159cd0e78070490d3d3d9e74ecab2e0ebcf62b5e92680661f29743d` |
+| Contract address | `0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2` |
+| Deploy transaction | not recorded (official deployment supplied by the user) |
 | Deploy transaction status | `FINALIZED`, execution mode `NORMAL`, 5 validators, 0 rotations |
-| Deploy timestamp | `2026-10-24` |
+| Deploy timestamp | not recorded |
 | Deployer / current owner | `0x5B3661C576c7001e6d6279C67F3779705d334c89` |
 | Schema dump | `deployments/studionet.schema.txt` (242 lines: 12 read, 16 write methods) |
-| Studio import link | https://studio.genlayer.com/?import-contract=0x151af6e00e1250Af44B8be1a14eb743C9613A41A |
-| Explorer — contract | https://explorer-studio.genlayer.com/address/0x151af6e00e1250Af44B8be1a14eb743C9613A41A |
+| Studio import link | https://studio.genlayer.com/?import-contract=0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 |
+| Explorer — contract | https://explorer-studio.genlayer.com/address/0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 |
 | Explorer — deploy tx | https://explorer-studio.genlayer.com/tx/0xb138073ad159cd0e78070490d3d3d9e74ecab2e0ebcf62b5e92680661f29743d |
-| Stored code hash | identical to the row above (`8b5948bc…`) |
+| Stored code hash | identical to the row above (`ed6dff65…`) |
 
 ### Provenance check
 
 ```bash
-ADDR=0x151af6e00e1250Af44B8be1a14eb743C9613A41A
+ADDR=0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2
 curl -s -X POST https://studio.genlayer.com/api \
   -H 'Content-Type: application/json' \
   -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"gen_getContractCode\",\"params\":[\"$ADDR\"]}" \
@@ -51,8 +51,8 @@ Result:
 
 ```text
 identical: True
-deployed sha256: 8b5948bccdfcd6786bf89262e8e0fd6f31374df035a6ea725117c07e09eb1417
-local    sha256: 8b5948bccdfcd6786bf89262e8e0fd6f31374df035a6ea725117c07e09eb1417
+deployed sha256: ed6dff655962b4219dfc1e87c3930900a10aaf68a541be5e5f9e7c429de5f855
+local    sha256: ed6dff655962b4219dfc1e87c3930900a10aaf68a541be5e5f9e7c429de5f855
 ```
 
 Note on the Studio code panel: passing the address as a plain string to
@@ -176,7 +176,7 @@ Read methods returning live data (all succeeded):
 
 ### On-chain state
 
-`genlayer call 0x151af6e00e1250Af44B8be1a14eb743C9613A41A get_config` after the
+`genlayer call 0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 get_config` after the
 exercise: the policy is back at the 24-hour default, ownership is unchanged, and
 `R1` is deprecated by design (deprecation is permanent — that is the point of
 `deprecate_rule`). `R2` stays active for new disputes.
@@ -221,9 +221,9 @@ would move control of this deployment irreversibly and only one key is held.
 
 ```bash
 genlayer network set studionet
-genlayer schema 0x151af6e00e1250Af44B8be1a14eb743C9613A41A
-genlayer call   0x151af6e00e1250Af44B8be1a14eb743C9613A41A get_config
-genlayer call   0x151af6e00e1250Af44B8be1a14eb743C9613A41A list_active_rules --args 0 10
+genlayer schema 0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2
+genlayer call   0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 get_config
+genlayer call   0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 list_active_rules --args 0 10
 gltest tests/integration/ -v -s --network studionet   # exercises the same source
 ```
 
@@ -552,11 +552,11 @@ JSON-RPC results.
 |---|---|
 | Live URL | <https://daoresolve.vercel.app> |
 | Vercel project | `daoresolve` under `habteselassies-projects` |
-| Production deployment | `dpl_9GgBvh145WdnoTwEAxzXVk1zTJEg` (final build after wallet discovery) |
+| Production deployment | `dpl_6EeXBrm1oHSCV2ruTn72pVMHKuXg` (final build for unseeded official contract) |
 | Build | `npm run build` (Vite) |
 | Proxy check | `POST /api` with `eth_chainId` -> `200`, `{"jsonrpc":"2.0","result":"0xf22f","id":1}` |
 | Contract read | Hosted `/api` returned `owner`, `challenge_window`, and `recorder` from the demo contract |
-| Browser check | Overview metrics `2 / 1 / 4`, 5 rows, no alerts; `D1` (`RE_EVALUATED`, compliant notice, zero violation notices), `D5` (`VIOLATION`, one violation notice, `missing from_event=SUBMITTED`), `D4` (`Finalized record`), and `ENS-7.1` (recorder events) all read successfully |
+| Browser check | Overview metrics `0 / 0 / 0`, 0 rows, no alerts; the official contract is unseeded, so the UI shows the empty state without console errors |
 | Console | No page or console errors during the paced hosted read run |
 
 Screenshots: [docs/screenshots/vercel-overview-real.png](../docs/screenshots/vercel-overview-real.png),

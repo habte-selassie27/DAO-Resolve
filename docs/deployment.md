@@ -8,13 +8,13 @@ current source:
 | Item | Value |
 |---|---|
 | Contract | `contracts/dao_resolve.py` (1,463 lines) |
-| Source SHA-256 | `8b5948bccdfcd6786bf89262e8e0fd6f31374df035a6ea725117c07e09eb1417` |
-| Address | `0x151af6e00e1250Af44B8be1a14eb743C9613A41A` |
+| Source SHA-256 | `ed6dff655962b4219dfc1e87c3930900a10aaf68a541be5e5f9e7c429de5f855` |
+| Address | `0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2` |
 | Deploy transaction | `0xb138073ad159cd0e78070490d3d3d9e74ecab2e0ebcf62b5e92680661f29743d` |
 | Deploy status | `FINALIZED` (execution mode `NORMAL`, 5 validators) |
 | Owner | `0x5B3661C576c7001e6d6279C67F3779705d334c89` |
-| Explorer | https://explorer-studio.genlayer.com/address/0x151af6e00e1250Af44B8be1a14eb743C9613A41A |
-| Studio import | https://studio.genlayer.com/?import-contract=0x151af6e00e1250Af44B8be1a14eb743C9613A41A |
+| Explorer | https://explorer-studio.genlayer.com/address/0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 |
+| Studio import | https://studio.genlayer.com/?import-contract=0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 |
 | Schema | `deployments/studionet.schema.json` (28 methods; older `.txt` retained) |
 
 The complete record, including write transactions and read outputs, is in

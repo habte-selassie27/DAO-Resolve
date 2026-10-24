@@ -2,7 +2,7 @@ import { activeNetwork } from "./networks.js";
 import schema from "./schema/dao_resolve.json";
 
 const addresses = {
-  studionet: import.meta.env.VITE_CONTRACT_ADDRESS || "0x151af6e00e1250Af44B8be1a14eb743C9613A41A",
+  studionet: import.meta.env.VITE_CONTRACT_ADDRESS || "0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2",
   testnetBradbury: import.meta.env.VITE_CONTRACT_ADDRESS || "",
   localnet: import.meta.env.VITE_CONTRACT_ADDRESS || "",
 };
@@ -14,7 +14,7 @@ export const contractExplorerUrl =
     : "";
 export const mockMode = import.meta.env.VITE_MOCK === "1";
 export const contractSchema = schema;
-export const demoDisputeIds = (import.meta.env.VITE_DEMO_DISPUTES || "D1,D4,D3")
+export const demoDisputeIds = (import.meta.env.VITE_DEMO_DISPUTES || "")
   .split(",")
   .map((value) => value.trim())
   .filter(Boolean);

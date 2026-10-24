@@ -8,7 +8,7 @@ challengeable, and clearly labelled as advisory.
 Live demo: <https://daoresolve.vercel.app>
 
 Live contract on StudioNet:
-[`0x151af6e00e1250Af44B8be1a14eb743C9613A41A`](https://explorer-studio.genlayer.com/address/0x151af6e00e1250Af44B8be1a14eb743C9613A41A)
+[`0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2`](https://explorer-studio.genlayer.com/address/0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2)
 
 ---
 
@@ -167,11 +167,11 @@ npm run recorder -- ingest snapshot \
   --proposal-id ENS-7.1
 
 # Inspect the plan under recorder/logs/ENS-7.1.json, then send it:
-CONTRACT_ADDRESS=0x151af6e00e1250Af44B8be1a14eb743C9613A41A \
+CONTRACT_ADDRESS=0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 \
 RECORDER_PRIVATE_KEY=0x… \
 npm run recorder -- submit recorder/logs/ENS-7.1.json
 
-CONTRACT_ADDRESS=0x151af6e00e1250Af44B8be1a14eb743C9613A41A \
+CONTRACT_ADDRESS=0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 \
 npm run recorder -- verify recorder/logs/ENS-7.1.json
 ```
 
@@ -283,7 +283,7 @@ CI installs the matching browser instead.
 | Live frontend | <https://daoresolve.vercel.app> |
 | Hosting | Vercel static build plus a same-origin `/api` rewrite to StudioNet |
 | Network | StudioNet (gasless), chain id `61999` |
-| Demo contract | `0x151af6e00e1250Af44B8be1a14eb743C9613A41A` |
+| Demo contract | `0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2` |
 | Fresh smoke deployment | `0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e` |
 | Browser-wallet smoke write | `0x23cc5d6ea3d358bdbb5389353c9efd98bccbab987dc7520d77452ee361e6e2e4` (`FINALIZED`) |
 | Schema | `frontend/src/config/schema/dao_resolve.json`, `deployments/studionet.schema.json` |

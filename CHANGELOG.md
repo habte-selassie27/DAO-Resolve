@@ -2,6 +2,29 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-24 (wallet chooser: pick from every browser wallet)
+
+DONE:
+- Replaced the inline wallet dropdown plus the "Connect <wallet>" button with a single
+  **Connect wallet** button that opens a picker listing every browser extension wallet
+  detected on the page: MetaMask, Rabby, Brave Wallet, Coinbase Wallet, Trust Wallet,
+  OKX Wallet, and any other EIP-6963 or injected provider. Clicking a wallet connects to
+  that provider specifically.
+- Discovery now rescans when the picker opens (some wallets announce late or are installed
+  while the page is open), listens for `ethereum#initialized`, deduplicates providers, and
+  names legacy providers with their more specific flags before falling back to
+  "Injected wallet".
+- Picker behavior: click outside or Escape closes it; the chosen row shows "Connecting…";
+  the picker closes only after the wallet returns an account; a failed connection keeps
+  the picker open with the error shown beneath the bar. With no wallet installed it shows
+  install guidance instead of a disabled button.
+- `wallets.js` exports `requestWalletAnnouncements()` for the rescan.
+
+PROOF:
+- `cd frontend && npm test` -> **41 passed (5 files)** including 4 new wallet-picker tests
+  (list, choose a specific wallet, no-wallet guidance, Escape to close). `npm run lint`
+  -> clean. `npm run build` -> passes.
+
 ## 2026-10-24 (structured check editor fix)
 
 DONE:
@@ -99,7 +122,7 @@ DONE:
   DisputeDetail, Overview, Admin config).
 - Changed rule registration to owner or rule registrar only; proposal, event, and dispute
   creation remain open to any wallet. Event writes now tolerate CLI address encoding.
-- Redeployed the demo contract as `0x151af6e00e1250Af44B8be1a14eb743C9613A41A` and seeded
+- Redeployed the demo contract as `0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2` and seeded
   D1-D5, ENS-7.1, assessments, challenges, finalization, withdrawal, and escalation.
 
 PROOF:

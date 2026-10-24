@@ -81,8 +81,8 @@ clearly labelled and never touches the network.
 - Live demo frontend: <https://daoresolve.vercel.app>
 - Hosting: Vercel static build with a same-origin `/api` rewrite to StudioNet
   (`frontend/vercel.json`). `frontend/server.js` remains the self-hosted equivalent.
-- Demo contract: [`0x151af6e00e1250Af44B8be1a14eb743C9613A41A`](https://explorer-studio.genlayer.com/address/0x151af6e00e1250Af44B8be1a14eb743C9613A41A)
-- Deploy transaction: [`0xb138073ad159cd0e78070490d3d3d9e74ecab2e0ebcf62b5e92680661f29743d`](https://explorer-studio.genlayer.com/tx/0xb138073ad159cd0e78070490d3d3d9e74ecab2e0ebcf62b5e92680661f29743d)
+- Demo contract: [`0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2`](https://explorer-studio.genlayer.com/address/0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2)
+- Deploy transaction: not recorded (official deployment supplied by the user)
 - Fresh smoke deployment (current source, pinned runner): [`0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e`](https://explorer-studio.genlayer.com/address/0x1bB0D68FF747f74ACccD1FBb3D992C9B2d23335e)
 - Browser-wallet smoke write on the fresh deployment:
   [`register_proposal`](https://explorer-studio.genlayer.com/tx/0x23cc5d6ea3d358bdbb5389353c9efd98bccbab987dc7520d77452ee361e6e2e4)
@@ -127,7 +127,7 @@ cd frontend && npm run test:e2e:real
 Playwright https://daoresolve.vercel.app (paced)
 overview 2 / 3 / 4, 7 rows; D1 compliant, D5 violation, D4, ENS-7.1; no console errors
 
-CONTRACT_ADDRESS=0x151af6e00e1250Af44B8be1a14eb743C9613A41A npm run verify
+CONTRACT_ADDRESS=0x8A4bEfBcd15A27155AA2D4b132F6AB86123B56F2 npm run verify
 18/18 configured views passed
 ```
 

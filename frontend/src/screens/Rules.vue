@@ -115,6 +115,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import CheckEditor from "../components/CheckEditor.vue";
 import EmptyState from "../components/EmptyState.vue";
 import ErrorNotice from "../components/ErrorNotice.vue";
+import { emptyCopy } from "../domain/copy.js";
 import { state } from "../lib/store.js";
 import { listActiveRules } from "../lib/chain/reads.js";
 import { registerRule } from "../lib/chain/writes.js";
