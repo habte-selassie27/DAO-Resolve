@@ -8,7 +8,7 @@
       <div class="form-grid">
         <div class="field">
           <label :for="`check-id-${index}`">Check id</label>
-          <input :id="`check-id-${index}`" v-model.trim="check.check_id" placeholder="review" />
+          <input :id="`check-id-${index}`" v-model.trim="check.check_id" maxlength="64" placeholder="review-window" />
         </div>
         <div class="field">
           <label :for="`check-kind-${index}`">Kind</label>
@@ -22,11 +22,11 @@
         <template v-if="check.kind === 'MIN_ELAPSED'">
           <div class="field">
             <label :for="`check-from-${index}`">From event</label>
-            <input :id="`check-from-${index}`" v-model.trim="check.from_event_type" placeholder="SUBMITTED" />
+            <input :id="`check-from-${index}`" v-model.trim="check.from_event_type" maxlength="64" placeholder="SUBMITTED" />
           </div>
           <div class="field">
             <label :for="`check-to-${index}`">To event</label>
-            <input :id="`check-to-${index}`" v-model.trim="check.to_event_type" placeholder="VOTING_STARTED" />
+            <input :id="`check-to-${index}`" v-model.trim="check.to_event_type" maxlength="64" placeholder="VOTING_STARTED" />
           </div>
           <div class="field">
             <label :for="`check-threshold-${index}`">Minimum seconds</label>
@@ -36,13 +36,13 @@
         <template v-else-if="check.kind === 'REQUIRED_EVENT'">
           <div class="field">
             <label :for="`check-event-${index}`">Event type</label>
-            <input :id="`check-event-${index}`" v-model.trim="check.event_type" placeholder="DISCUSSION_OPENED" />
+            <input :id="`check-event-${index}`" v-model.trim="check.event_type" maxlength="64" placeholder="DISCUSSION_OPENED" />
           </div>
         </template>
         <template v-else-if="check.kind === 'MIN_COUNT'">
           <div class="field">
             <label :for="`check-event-${index}`">Event type</label>
-            <input :id="`check-event-${index}`" v-model.trim="check.event_type" placeholder="COMMENT" />
+            <input :id="`check-event-${index}`" v-model.trim="check.event_type" maxlength="64" placeholder="CONFLICT_DISCLOSED" />
           </div>
           <div class="field">
             <label :for="`check-threshold-${index}`">Minimum count</label>
@@ -52,15 +52,14 @@
         <template v-else-if="check.kind === 'REQUIRED_ROLE'">
           <div class="field">
             <label :for="`check-event-${index}`">Event type</label>
-            <input :id="`check-event-${index}`" v-model.trim="check.event_type" placeholder="REVIEW_COMPLETED" />
+            <input :id="`check-event-${index}`" v-model.trim="check.event_type" maxlength="64" placeholder="REVIEW_COMPLETED" />
           </div>
           <div class="field">
             <label :for="`check-role-${index}`">Required role</label>
             <select :id="`check-role-${index}`" v-model="check.role">
-              <option value="owner">owner</option>
-              <option value="registrar">registrar</option>
-              <option value="recorder">recorder</option>
-              <option value="escalator">escalator</option>
+              <option value="RULE_REGISTRAR">Rule registrar</option>
+              <option value="RECORDER">Recorder</option>
+              <option value="ESCALATOR">Escalator</option>
             </select>
           </div>
         </template>
@@ -100,7 +99,7 @@ function blankCheck() {
     from_event_type: "SUBMITTED",
     to_event_type: "VOTING_STARTED",
     threshold: 0,
-    role: "recorder",
+    role: "RECORDER",
     role_address: "0x0000000000000000000000000000000000000000",
   };
 }
@@ -115,7 +114,7 @@ function remove(index) {
 
 function normalize(check) {
   if (check.kind === "REQUIRED_EVENT" || check.kind === "REQUIRED_ROLE") check.threshold = 0;
-  if (check.kind === "REQUIRED_EVENT" || check.kind === "MIN_COUNT") check.role = "";
+  if (check.kind !== "REQUIRED_ROLE") check.role = "";
   checks.value = [...checks.value];
 }
 </script>

@@ -2,6 +2,59 @@
 
 All notable changes to DAOResolve are recorded here.
 
+## 2026-10-24 (plain-language copy in place of implementation jargon)
+
+DONE:
+- Rewrote the Proposals page notice. It used to explain a contract method name and a build
+  variable; it now describes the behavior a visitor can see: every entry is read from the
+  chain and verified, and ids that do not exist are skipped, so nothing is invented.
+- Removed the remaining implementation details from user-facing copy. "How it works" now
+  says "how the verdict was reached" and "web digest" instead of field names, and the
+  mock-mode banner no longer asks visitors to edit a build variable.
+
+PROOF:
+- `cd frontend && npm test` -> **53 passed (7 files)**. `npm run lint` -> clean.
+  `npm run build` -> passes. No `<code>` call or variable names remain in any screen copy.
+
+## 2026-10-24 (fix: register_rule rejected the checks payload)
+
+DONE:
+- Fixed `EXPECTED: unknown structured check key` on rule registration. The form sent an
+  extra `role_address` field per check, but the contract only accepts `check_id`, `kind`,
+  `event_type`, `from_event_type`, `to_event_type`, `threshold`, and `role` (it pins the
+  role address itself at registration). The payload is now built by `toContractChecks()`,
+  which emits exactly the allowed keys and nothing else, and trims values.
+- Added tests asserting the emitted keys are exactly the contract whitelist and that
+  `role_address` can never be sent even when present in the form/draft row.
+
+PROOF:
+- `cd frontend && npm test` -> **53 passed (7 files)**. `npm run lint` -> clean.
+  `npm run build` -> passes. The earlier failed transaction (0x0e4579fb…) rolled back with
+  no state change, so the rule can simply be submitted again.
+
+## 2026-10-24 (rule form: explicit validation and correct role enum)
+
+DONE:
+- Fixed "Register rule" appearing to do nothing. The clause textarea is required, so with
+  an empty clause the browser blocked submit before the app could explain anything — and
+  the placeholder text looks like a filled value. The form now uses `novalidate` and a
+  shared client-side validator (`src/lib/ruleValidation.js`) that always reports the exact
+  missing piece in the page: rule id, title, clause text, category, interpretation, the
+  DETERMINISTIC_ONLY "at least one check" requirement, and every incomplete check field.
+- The validator mirrors the contract's limits: ids 1-64 characters of letters, digits,
+  `- _ . :`; title 120; clause 2000; MIN_ELAPSED/MIN_COUNT thresholds must be positive
+  integers; check ids unique within a rule.
+- Fixed the REQUIRED_ROLE check values: the contract accepts `RULE_REGISTRAR`, `RECORDER`,
+  `ESCALATOR` only, but the editor offered lowercase `owner`/`registrar`/`recorder`/
+  `escalator`, which would have been rejected as "unknown role". The editor now uses the
+  contract enum values with friendly labels, and previously saved lowercase drafts are
+  migrated on load.
+- Added `maxlength` to the rule and check inputs to match the contract limits.
+
+PROOF:
+- `cd frontend && npm test` -> **51 passed (7 files)** including 9 new validator tests.
+  `npm run lint` -> clean. `npm run build` -> passes.
+
 ## 2026-10-24 (fix: rules screen froze with an empty rule list)
 
 DONE:

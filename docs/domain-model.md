@@ -49,7 +49,7 @@ A proposal referenced by disputes.
 | Field | Type | Notes |
 |---|---|---|
 | `proposal_id` | `str` | Unique proposal identifier |
-| `content_ref` | `str` | URL or hash of proposal text; bounded |
+| `content_ref` | `str` | URL, hash, or the bounded proposal text itself |
 | `status_note` | `str` | Short bounded note |
 | `created_at` | `u64` | Registration timestamp |
 | `created_by` | `Address` | Recorder that registered it |

@@ -1,6 +1,7 @@
 import { contractAddress, mockMode } from "../../config/contracts.js";
 import { readClient } from "./clients.js";
 import { isNetworkError } from "../errors.js";
+import { mergeProposalIds, readRememberedProposals } from "../proposalRegistry.js";
 import * as mock from "../mock/client.js";
 
 export function normalize(value) {
@@ -133,23 +134,24 @@ export async function getChallenges(disputeId, offset = 0, limit = 50) {
 }
 
 export async function listProposals(offset = 0, limit = 50) {
-  // The contract has no list_proposals view. Proposal ids are discovered from
-  // disputes and from a deployment seed list; the demo deployment provides
-  // VITE_PROPOSAL_IDS. This keeps the UI honest rather than inventing a view.
+  // The contract has no list_proposals view, so ids come from three honest
+  // sources: the deployment's configured ids, proposals registered from this
+  // browser, and ids referenced by existing disputes. Each id is then read
+  // from the chain; ids that do not exist are skipped rather than invented.
   if (mockMode) return mock.listProposals(offset, limit);
   const configured = (import.meta.env.VITE_PROPOSAL_IDS || "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
-  let ids = configured;
-  if (ids.length === 0) {
-    try {
-      const disputes = await listDisputes(0, 50);
-      ids = [...new Set((disputes || []).map((item) => item?.proposal_id).filter(Boolean))];
-    } catch {
-      ids = [];
-    }
+  let disputed = [];
+  try {
+    const disputes = await listDisputes(0, 50);
+    disputed = (disputes || []).map((item) => item?.proposal_id).filter(Boolean);
+  } catch {
+    // A failed dispute read must not hide the proposals we already know about.
+    disputed = [];
   }
+  const ids = mergeProposalIds(configured, readRememberedProposals(), disputed);
   const page = ids.slice(offset, offset + limit);
   const proposals = await Promise.all(
     page.map(async (id) => {

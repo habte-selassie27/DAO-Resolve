@@ -22,7 +22,7 @@
           <h2>Proposal record</h2>
           <dl class="kv">
             <dt>Proposal id</dt><dd class="mono">{{ proposal.proposal_id }}</dd>
-            <dt>Content reference</dt>
+            <dt>Proposal content or source link</dt>
             <dd class="wrap">
               <a v-if="safeUrl(proposal.content_ref)" :href="proposal.content_ref" target="_blank" rel="noopener noreferrer">{{ proposal.content_ref }}</a>
               <span v-else>{{ proposal.content_ref || "—" }}</span>

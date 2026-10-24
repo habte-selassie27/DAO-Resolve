@@ -260,7 +260,7 @@ Real, current results:
 | Frontend lint | `cd frontend && npm run lint` | clean |
 | Frontend unit tests | `cd frontend && npm test` | **42 passed** |
 | Frontend e2e (mock) | `cd frontend && npx playwright test` | **10 passed**, 4 real-mode tests skipped |
-| Frontend e2e (real reads) | `cd frontend && npm run test:e2e:real` | **4 passed** against StudioNet |
+| Frontend e2e (real reads) | `cd frontend && npm run test:e2e:real` | **1 passed, 3 skipped on the unseeded official deployment** against StudioNet |
 | Hosted frontend (real reads) | Playwright against `https://daoresolve.vercel.app` | paced run: overview `2 / 3 / 4`, 7 rows; D1 compliant, D5 violation, D4, ENS-7.1; no console errors |
 | Browser-wallet write | manual injected EIP-1193 provider | **1 tx FINALIZED** on the fresh deployment; proposal read back |
 | Frontend production build | `cd frontend && npm run build` | passes |

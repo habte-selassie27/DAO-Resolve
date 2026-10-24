@@ -60,8 +60,9 @@
         <div class="panel flat">
           <div class="row" style="margin-bottom: 4px"><span class="chip">3</span><strong>The record says which one decided</strong></div>
           <p class="small muted" style="margin: 0">
-            Every assessment carries <code>decided_by</code>: DETERMINISTIC_CHECKS or INTERPRETATION.
-            The UI shows it next to the verdict instead of hiding it behind a generic "AI result".
+            Every assessment records how the verdict was reached: by the rule's deterministic
+            checks, or by validator interpretation of the pinned clause. The UI shows this next
+            to the verdict instead of hiding it behind a generic "AI result".
           </p>
         </div>
       </div>
@@ -123,7 +124,8 @@
         <li>Evidence URLs are fetched live by validators. Unreadable evidence cannot support a decisive verdict.</li>
         <li>Proposals and process events can be submitted by any wallet. Each event shows who recorded it and links to a public source; the contract does not independently prove the event happened.</li>
         <li>Sides are self-declared. The contract records the label; it does not verify identity.</li>
-        <li>The <code>web_digest</code> is leader-asserted and not compared. It is labelled informational.</li>
+        <li>The web digest is asserted by the leading validator and is not compared across
+          validators. It is labelled informational and is never presented as proof.</li>
         <li>The output is advisory. It is not a legal ruling and does not execute or reverse anything.</li>
       </ul>
     </section>

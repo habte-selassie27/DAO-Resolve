@@ -58,16 +58,16 @@
       <p v-if="!state.address" class="notice system small" style="margin-bottom: 12px">
         Connect a wallet to sign this transaction. Reads work without one.
       </p>
-      <form @submit.prevent="submit">
+      <form novalidate @submit.prevent="submit">
         <div class="form-grid">
           <div class="field">
             <label for="rule-id">Rule id</label>
-            <input id="rule-id" v-model.trim="form.ruleId" required placeholder="R-REVIEW" />
-            <span class="hint">Letters, digits, dash, underscore, dot, colon.</span>
+            <input id="rule-id" v-model.trim="form.ruleId" required maxlength="64" placeholder="R-REVIEW" />
+            <span class="hint">Letters, digits, dash, underscore, dot, colon. Max 64 characters.</span>
           </div>
           <div class="field">
             <label for="rule-title">Title</label>
-            <input id="rule-title" v-model.trim="form.title" required placeholder="Minimum review period" />
+            <input id="rule-title" v-model.trim="form.title" required maxlength="120" placeholder="Minimum review period" />
           </div>
           <div class="field">
             <label for="rule-category">Category</label>
@@ -86,8 +86,8 @@
           </div>
           <div class="field full">
             <label for="rule-clause">Clause text</label>
-            <textarea id="rule-clause" v-model.trim="form.clauseText" required placeholder="Proposals require at least 48 hours of review before voting…" />
-            <span class="hint">{{ form.clauseText.length }} / 2000 characters.</span>
+            <textarea id="rule-clause" v-model.trim="form.clauseText" required maxlength="2000" placeholder="Proposals require at least 48 hours of review before voting…" />
+            <span class="hint">{{ form.clauseText.length }} / 2000 characters. Required.</span>
           </div>
         </div>
 
@@ -121,6 +121,7 @@ import { listActiveRules } from "../lib/chain/reads.js";
 import { registerRule } from "../lib/chain/writes.js";
 import { runTransaction } from "../lib/chain/tx.js";
 import { bindFormDraft } from "../lib/formPersistence.js";
+import { toContractChecks, validateRuleForm } from "../lib/ruleValidation.js";
 
 const RULE_FORM_DEFAULTS = {
   ruleId: "",
@@ -142,6 +143,19 @@ const form = reactive({ ...RULE_FORM_DEFAULTS, checks: [] });
 // Draft persists across reloads and hard refreshes so a rejected wallet
 // signature never loses the entered rule.
 const formDraft = bindFormDraft("rule:register", form, RULE_FORM_DEFAULTS);
+// Older drafts stored lowercase role values; the contract only accepts the
+// enum names RULE_REGISTRAR / RECORDER / ESCALATOR.
+const LEGACY_CHECK_ROLES = {
+  registrar: "RULE_REGISTRAR",
+  recorder: "RECORDER",
+  escalator: "ESCALATOR",
+  owner: "",
+};
+form.checks = (Array.isArray(form.checks) ? form.checks : []).map((check) => {
+  const role = String(check.role || "");
+  const mapped = LEGACY_CHECK_ROLES[role.toLowerCase()];
+  return { ...check, role: mapped === undefined ? role.toUpperCase() : mapped };
+});
 
 const filteredRules = computed(() => {
   const term = query.value.trim().toLowerCase();
@@ -164,28 +178,7 @@ async function load() {
 }
 
 function validate() {
-  if (!/^[A-Za-z0-9._:-]+$/.test(form.ruleId)) return "Rule id contains unsupported characters.";
-  if (form.clauseText.length > 2000) return "Clause text is over the 2000 character limit.";
-  if (form.interpretation === "DETERMINISTIC_ONLY" && form.checks.length === 0) {
-    return "A DETERMINISTIC_ONLY rule needs at least one check.";
-  }
-  const ids = form.checks.map((check) => check.check_id);
-  if (ids.some((id) => !id)) return "Every check needs an id.";
-  if (new Set(ids).size !== ids.length) return "Check ids must be unique.";
-  for (const check of form.checks) {
-    if (["MIN_ELAPSED", "REQUIRED_EVENT", "MIN_COUNT", "REQUIRED_ROLE"].includes(check.kind)) {
-      if (!Number.isFinite(Number(check.threshold)) || Number(check.threshold) < 0) {
-        return "Thresholds must be non-negative numbers.";
-      }
-    }
-    if (check.kind === "MIN_ELAPSED" && (!check.from_event_type || !check.to_event_type)) {
-      return "MIN_ELAPSED needs both event types.";
-    }
-    if (check.kind !== "MIN_ELAPSED" && !check.event_type) {
-      return `${check.kind} needs an event type.`;
-    }
-  }
-  return "";
+  return validateRuleForm(form);
 }
 
 async function submit() {
@@ -202,16 +195,7 @@ async function submit() {
           clauseText: form.clauseText,
           category: form.category,
           interpretation: form.interpretation,
-          checks: form.checks.map((check) => ({
-            check_id: check.check_id,
-            kind: check.kind,
-            event_type: check.event_type || "",
-            from_event_type: check.from_event_type || "",
-            to_event_type: check.to_event_type || "",
-            threshold: Number(check.threshold) || 0,
-            role: check.role || "",
-            role_address: "0x0000000000000000000000000000000000000000",
-          })),
+          checks: toContractChecks(form.checks),
         }),
       onFinalized: load,
     });

@@ -54,8 +54,8 @@ clearly labelled and never touches the network.
 - The recorder ingested a real ENS Snapshot proposal and submitted three events on chain.
   The plan, source URL, raw fields, and transaction hashes are in the repository.
 - The frontend reads the deployed contract through a same-origin proxy. The opt-in
-  real-mode Playwright suite passes 4/4 against StudioNet (overview totals, the D1
-  deterministic path, the D4 consensus path, and the ENS-7.1 recorder events).
+  real-mode Playwright suite passes 1/4 against the unseeded official deployment
+  (overview only; D1, D4, and ENS-7.1 are skipped because that contract has no demo data).
 - The browser write path was exercised in Chromium with an injected EIP-1193 test
   provider. The owner address signed `register_proposal`; the UI showed submitted,
   consensus, and finalized states, and the contract returned the new proposal. The
@@ -121,7 +121,7 @@ cd frontend && npx playwright test
 10 passed, 4 real-mode tests skipped
 
 cd frontend && npm run test:e2e:real
-4 passed
+1 passed, 3 skipped on the unseeded official deployment
 
 # hosted app, real reads
 Playwright https://daoresolve.vercel.app (paced)

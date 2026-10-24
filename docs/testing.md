@@ -12,7 +12,7 @@
 | Frontend lint | Clean |
 | Frontend unit tests | **42 passed** (includes assessment-panel, network-error, retry, and role-gate regressions) |
 | Frontend e2e (mock) | **10 passed**, 4 real-mode tests skipped |
-| Frontend e2e (real reads) | **4 passed** against StudioNet |
+| Frontend e2e (real reads) | **1 passed, 3 skipped on the unseeded official deployment** against StudioNet |
 | Hosted frontend (real reads) | Paced run: overview metrics `2 / 3 / 4`, 7 rows; D1 compliant notice, D5 violation notice, D4, ENS-7.1; no console errors |
 | Browser-wallet write | **1 tx FINALIZED** in Chromium with an injected EIP-1193 provider |
 | Frontend build | Passes |

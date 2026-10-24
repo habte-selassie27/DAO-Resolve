@@ -19,8 +19,8 @@
     <main id="main" class="main">
       <div v-if="mockMode" class="notice system" style="margin-bottom: 18px">
         <p class="small" style="margin: 0">
-          <strong>Mock mode.</strong> This build uses recorded fixtures and simulated transactions.
-          No wallet or network is touched. Set <code>VITE_MOCK=0</code> to use the deployed contract.
+          <strong>Mock mode.</strong> This build uses recorded fixtures and simulated transactions;
+          no wallet or network is touched. The deployed build runs against the live contract.
         </p>
       </div>
       <!-- Keyed by path so each proposal/dispute screen remounts fresh: drafts

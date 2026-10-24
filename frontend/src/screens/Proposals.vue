@@ -12,9 +12,9 @@
 
     <div class="notice system">
       <p class="small" style="margin: 0">
-        The contract has no <code>list_proposals</code> view, so this screen reads the proposal ids
-        configured for the demo deployment (<code>VITE_PROPOSAL_IDS</code>) and opens each one.
-        Nothing is invented: ids that do not exist are skipped.
+        This page lists the proposals known to this deployment plus any you register from this
+        browser. Every entry is read directly from the chain; ids that do not exist are skipped,
+        so nothing here is invented.
       </p>
     </div>
 
@@ -35,7 +35,7 @@
         <p class="serif" style="margin-bottom: 6px">{{ proposal.status_note || "No status note." }}</p>
         <p class="small muted wrap" style="margin-bottom: 10px">
           <a v-if="safeUrl(proposal.content_ref)" :href="proposal.content_ref" target="_blank" rel="noopener noreferrer">{{ proposal.content_ref }}</a>
-          <span v-else>{{ proposal.content_ref || "No content reference." }}</span>
+          <span v-else>{{ proposal.content_ref || "No content recorded." }}</span>
         </p>
         <div class="between">
           <span class="tiny muted">registered {{ formatTime(proposal.created_at) }}</span>
@@ -50,20 +50,24 @@
       <p v-if="!state.address" class="notice system small" style="margin-bottom: 12px">
         Connect a wallet to sign this transaction. Reads work without one.
       </p>
-      <form @submit.prevent="submit">
+      <form novalidate @submit.prevent="submit">
         <div class="field">
           <label for="proposal-id">Proposal id</label>
-          <input id="proposal-id" v-model.trim="form.proposalId" required placeholder="P-001" />
-          <span class="hint">Letters, digits, dash, underscore, dot, colon.</span>
+          <input id="proposal-id" v-model.trim="form.proposalId" required maxlength="64" placeholder="P-001" />
+          <span class="hint">Letters, digits, dash, underscore, dot, colon. Max 64 characters.</span>
         </div>
         <div class="field">
-          <label for="proposal-ref">Content reference</label>
-          <input id="proposal-ref" v-model.trim="form.contentRef" required placeholder="https://forum.example.org/t/proposal" />
-          <span class="hint">The authoritative public page for this proposal.</span>
+          <label for="proposal-ref">Proposal content or source link</label>
+          <textarea id="proposal-ref" v-model.trim="form.contentRef" required maxlength="512" rows="3" placeholder="Treasury diversification: move 500,000 GEN into a stable reserve over three months, with monthly reporting." />
+          <span class="hint">
+            Type the proposal text, or paste a link to its public page. It is stored on chain as
+            written. {{ form.contentRef.length }} / 512 characters.
+          </span>
         </div>
         <div class="field">
           <label for="proposal-note">Status note</label>
-          <input id="proposal-note" v-model.trim="form.statusNote" placeholder="Discussion opened; vote not started." />
+          <input id="proposal-note" v-model.trim="form.statusNote" maxlength="280" placeholder="Discussion opened; vote not started." />
+          <span class="hint">{{ form.statusNote.length }} / 280 characters.</span>
         </div>
         <p v-if="formError" class="notice violation small">{{ formError }}</p>
         <div class="row">
@@ -85,6 +89,7 @@ import { listProposals } from "../lib/chain/reads.js";
 import { registerProposal } from "../lib/chain/writes.js";
 import { runTransaction } from "../lib/chain/tx.js";
 import { bindFormDraft } from "../lib/formPersistence.js";
+import { rememberProposal } from "../lib/proposalRegistry.js";
 
 const PROPOSAL_FORM_DEFAULTS = { proposalId: "", contentRef: "", statusNote: "" };
 
@@ -119,23 +124,37 @@ async function load() {
   }
 }
 
-async function submit() {
-  formError.value = "";
-  if (!/^[A-Za-z0-9._:-]+$/.test(form.proposalId)) {
-    formError.value = "Proposal id contains unsupported characters.";
-    return;
+function validate() {
+  if (!form.proposalId) return "Add a proposal id, for example P-001.";
+  if (!/^[A-Za-z0-9._:-]{1,64}$/.test(form.proposalId)) {
+    return "Proposal id may only use letters, digits, and - _ . : (1-64 characters, no spaces).";
   }
+  if (!form.contentRef.trim()) return "Add the proposal content or a link to its public page.";
+  if (form.contentRef.length > 512) return "Proposal content is over the 512 character limit.";
+  if (form.statusNote.length > 280) return "Status note is over the 280 character limit.";
+  return "";
+}
+
+async function submit() {
+  formError.value = validate();
+  if (formError.value) return;
+  const proposalId = form.proposalId;
   submitting.value = true;
   try {
     const result = await runTransaction({
-      label: `Register proposal ${form.proposalId}`,
+      label: `Register proposal ${proposalId}`,
       send: () =>
         registerProposal({
-          proposalId: form.proposalId,
+          proposalId,
           contentRef: form.contentRef,
           statusNote: form.statusNote,
         }),
-      onFinalized: load,
+      // Remember the id before the refresh so the new proposal is included in
+      // this browser's list (the contract has no enumeration view).
+      onFinalized: () => {
+        rememberProposal(proposalId);
+        load();
+      },
     });
     if (!result.ok) {
       formError.value = "The transaction did not finalize. Review the transaction tray and try again.";
